@@ -170,3 +170,62 @@ The lib isolates the swap in one `swapExactIn()` helper, so switching venue/mech
 cd aqualadder && npm install
 npm run phase1:fork   # fresh Base fork + deposit.ts/strategy.ts end-to-end
 ```
+
+---
+
+## 2026-09-08 (cont.) — Phase 1 modules 3 & 4  ✅ PASS  (not committed yet)
+
+Added `src/lib/aqua/position.ts` + `unwind.ts`. Fork-tested via `scripts/phase1b.fork.ts`
+(`npm run phase1b:fork`).
+
+### Module 3 — `position.ts` (read model)
+`readPosition(client, input)` → `PositionState`:
+- `status` — `never-shipped` / `active` / `docked` (from `rawBalances` tokensCount: 0 / 1‑254 / 255)
+- per leg: `virtualBalance` (Aqua), `walletBalance` (aToken), `aaveIndexAtShip`/`aaveIndexNow`, `aaveYield` = `principal * (idxNow/idxShip − 1)` — **index-based**, so it doesn't depend on the aToken being un‑fungible
+- `aaveYieldTotal`, `aquaPnl` = `virtualValue − shippedValue` (net swap fees − inventory drift)
+- `quote` — small round-trip probe off the live strategy → `pegDeviationBps` (feeds the depeg rule)
+- `swaps` — `{ pulled, pushed, count }` from `Pulled`/`Pushed` events (the 2 ship‑time `Pushed` per `Shipped` are subtracted)
+- helpers: `isPositionActive()`, `statusFromTokensCount()`
+- ⚠️ pass `eventsFromBlock` = the deposit block — forked/hosted RPCs cap `eth_getLogs` at ~10k blocks and `0n` scans all history (hit this on the fork).
+
+### Module 4 — `unwind.ts`
+`buildUnwind(client, input)` → `UnwindPlan { steps, dockStep, alreadyDocked, status }`:
+- reads status first; if not `active` → `alreadyDocked: true`, dock step omitted (keeper can call it blindly every tick)
+- `steps` = `aqua.dock([aTokenA, aTokenB])` + (optional `withdrawFromAave`) `Aave.withdraw(MAX)` per leg → underlying to `withdrawTo`
+
+### Fork test result (`phase1b.fork.ts`, 1 000 USDC deposit, wide band)
+| Step | Result |
+|---|---|
+| readPosition (fresh) | active, virtual 495/495, ~0 yield, 0 swaps, pegDev 0 |
+| 2 taker swaps (3 aUSDbC each) | settle |
+| +30 d warp → readPosition | `aaveYieldTotal` **2.72 USDC**, `swaps.count` 2, `swaps.pulled` 5.99 aUSDC, `aquaPnl` **+0.0007** (peg spread), legs drift to 489/501 |
+| buildUnwind + execute (dock + 2 withdraws) | **495.55 USDC** back to wallet (principal + Aave yield − swapped‑out − spread), gas: dock 36k / withdraw 195k+161k |
+| readPosition | `docked` |
+| buildUnwind again | `alreadyDocked: true`, 0 steps |
+
+### ⚠️ Phase 1 finding — `withFeeTokenIn()` breaks `swap()` on the pegged strategy
+`AquaPeggedAmmStrategy.withFeeTokenIn(bps)` builds a program where `quote()` works
+but the on-chain `swap()` **reverts** (custom error, state-dependent — not a nonce/approval issue).
+Reproduced at `makerFeeBps` 1 and 5; `0` works every time. Likely the SwapVM
+instruction-order rule (flat fee is emitted *before* the pegged swap op).
+**`makerFeeBps` now defaults to 0** in `strategy.ts` / `deposit.ts`. The LP still
+earns: the pegged band itself is a spread. Revisit later (fee *after* the swap op,
+or `withProtocolFee`).
+
+### Other notes
+- `scripts/forkutil.ts` `sendStep()` now re-simulates a failed tx with `pub.call` to surface the revert reason.
+- Taker swaps must be small vs the band: 1% of a 495-unit leg through a ±0.5% pegged pool is borderline; the test uses the `wide` (±2%) preset.
+- `index.ts` re-exports all four modules.
+
+### Phase 1 status
+All 4 modules done and fork-tested. Remaining before a UI:
+- Phase 2 rule engine + store (peg deviation / TP / SL → `evaluate()`)
+- Phase 3 keeper (poll `readPosition`, fire `buildUnwind` via a session signer)
+- the swap-vs-borrow-loop decision for the second leg (USDbC liquidity)
+
+### How to reproduce
+```bash
+cd aqualadder && npm install
+npm run phase1:fork    # modules 1 & 2  — deposit + strategy
+npm run phase1b:fork   # modules 3 & 4  — position + unwind
+```

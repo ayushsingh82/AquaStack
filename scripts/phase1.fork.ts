@@ -36,7 +36,7 @@ async function main() {
   log.ok(`dealt ${u6(deposit)} USDC to ${user}`);
 
   // ---- module 1 + 2: build the plan ----
-  const plan = buildDeposit({ user, usdcAmount: deposit, pegBand: 'balanced', makerFeeBps: 1 });
+  const plan = buildDeposit({ user, usdcAmount: deposit, pegBand: 'balanced' });
   log.h('[plan] buildDeposit()');
   log.info(`strategyHash ${plan.strategyHash}`);
   log.info(`pegBand ±${plan.strategy.pegBand}% (preset "balanced" = ${PEG_BAND_PRESETS.balanced})  salt ${plan.strategy.salt}`);

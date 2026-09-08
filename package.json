@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "phase1:fork": "./scripts/run-fork.sh phase1.fork"
+    "phase1:fork": "./scripts/run-fork.sh phase1.fork",
+    "phase1b:fork": "./scripts/run-fork.sh phase1b.fork"
   },
   "dependencies": {
     "@1inch/aqua-sdk": "^0.3.1",

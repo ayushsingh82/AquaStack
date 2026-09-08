@@ -22,10 +22,20 @@ export const anvil = (method: string, params: unknown[]) =>
 
 /** sign+send a raw call, assert it succeeds */
 export async function sendStep(walletIdx: number, to: Address, data: Hex, label = ''): Promise<bigint> {
-  const hash = await wallets[walletIdx].sendTransaction({ to, data, chain: null });
-  const r = await pub.waitForTransactionReceipt({ hash });
-  if (r.status !== 'success') throw new Error(`tx reverted${label ? ` (${label})` : ''}`);
-  return r.gasUsed;
+  try {
+    const hash = await wallets[walletIdx].sendTransaction({ to, data, chain: null });
+    const r = await pub.waitForTransactionReceipt({ hash });
+    if (r.status !== 'success') throw new Error(`tx reverted${label ? ` (${label})` : ''}`);
+    return r.gasUsed;
+  } catch (e: any) {
+    // surface the on-chain revert reason
+    try {
+      await pub.call({ to, data, account: accounts[walletIdx].address });
+    } catch (inner: any) {
+      throw new Error(`${label || to}: ${(inner.shortMessage || inner.message).split('\n')[0]}`);
+    }
+    throw e;
+  }
 }
 
 /** brute-force an ERC20 balance storage slot and set `holder`'s balance */
