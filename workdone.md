@@ -229,3 +229,50 @@ cd aqualadder && npm install
 npm run phase1:fork    # modules 1 & 2  — deposit + strategy
 npm run phase1b:fork   # modules 3 & 4  — position + unwind
 ```
+
+---
+
+## 2026-09-08 (cont.) — Phase 2: rule engine + store  ✅ PASS  (not committed yet)
+
+`src/lib/rules/` — pure, no chain calls. Unit-tested via `scripts/phase2.test.ts`
+(`npm run phase2:test`, no fork needed). 21 checks green.
+
+### 1. Rule model (`types.ts`)
+```ts
+interface Rule {
+  pegDeviationBps?  // exit if the pool price leaves ±this of 1:1
+  takeProfitBps?    // exit once total return reaches +this (bps of principal)
+  stopLossBps?      // exit if total return drops to −this
+  maxDrawdownBps?   // exit if drop from the best return seen exceeds this
+  autoUnwind: bool  // true = keeper unwinds; false = keeper only alerts
+}
+```
+- `RULE_PRESETS`: `conservative` / `balanced` / `alertOnly`
+- `EvalContext { peakReturnBps? }` — carried between calls so max-drawdown has memory while `evaluate()` stays pure
+- `PositionRecord` — everything the keeper persists at deposit time (rule, ship-time principals + Aave indices, deposit block, `sessionSignerRef`, `status`, `peakReturnBps`)
+- `RuleStore` interface: `get / put / update / list(filter) / delete`
+
+### 3. Evaluator (`evaluate.ts`)
+`evaluate(PositionState, Rule, ctx?) → EvalResult`:
+- total return = `(aaveYieldTotal + aquaPnl) / principal` in bps; peg deviation straight from `PositionState.pegDeviationBps`
+- checks all four thresholds, returns every `TriggerReason` that fired
+- `action`: `hold` | `alert` (triggered, `autoUnwind:false`) | `unwind` (triggered, `autoUnwind:true`)
+- `status !== 'active'` → always `hold`
+- returns `nextContext` with the updated peak; `describeReasons()` for logs
+
+### 2. Store (`store.ts`)
+- `MemoryRuleStore` (tests) and `JsonFileRuleStore` (single JSON file, keyed `${user}:${strategyHash}` lowercased)
+- bigint-safe JSON via a `{ $bigint: "…" }` replacer/reviver — ship-time Aave indices (ray, ~1e27) survive a write→read
+- swap in Postgres later behind the same interface
+
+### Test coverage (`phase2.test.ts`)
+evaluate: hold / depeg→unwind / depeg+autoUnwind:false→alert / take-profit / stop-loss on negative return / max-drawdown across two calls (and peak resets without context) / docked→hold.
+store: bigint round-trip, case-insensitive keys, `update` patch, `list` status filter, `delete`, `update`-missing throws — for both implementations.
+
+### Phase 2 status
+Done. Next: **Phase 3 keeper** — cron that for each `active` record: `readPosition` → `evaluate` → if `action === 'unwind'`, run `buildUnwind` via the Privy session signer, then `store.update(status: 'unwound')`.
+
+### How to reproduce
+```bash
+npm run phase2:test    # pure unit test, no fork
+```
