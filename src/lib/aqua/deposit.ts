@@ -31,7 +31,7 @@ export interface DepositInput {
   usdcAmount: bigint;
   /** ±% peg band, or a preset ("tight" | "balanced" | "wide"). Default "balanced". */
   pegBand?: PegBandPercent | PegBandPreset;
-  /** maker/LP fee (bps) on amountIn. Default 1 bp. */
+  /** maker/LP fee (bps) on amountIn. Default 0 — see the warning on `PeggedStrategyInput.makerFeeBps`. */
   makerFeeBps?: number;
   /** strategy salt; defaults to random so re-deposits never collide */
   salt?: bigint;

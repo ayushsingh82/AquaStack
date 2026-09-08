@@ -43,7 +43,12 @@ export interface PeggedStrategyInput {
   reserveB: bigint;
   /** ±% band around the peg, or a preset name. Default "balanced" (±0.5%). */
   pegBand?: PegBandPercent | PegBandPreset;
-  /** fee (bps) on amountIn kept by the maker/LP. Default 1 bp. */
+  /**
+   * fee (bps) on amountIn kept by the maker/LP. **Default 0.**
+   * ⚠️ Phase 1 finding: `withFeeTokenIn()` on a pegged Aqua strategy makes the
+   * on-chain `swap()` revert (quote still works). Leave at 0 until resolved —
+   * the pegged band itself already captures a spread for the LP.
+   */
   makerFeeBps?: number;
   /** strategy uniqueness — defaults to a random uint64 salt so re-deposits never collide */
   salt?: bigint;
@@ -81,7 +86,7 @@ export function buildPeggedStrategy(maker: Address, input: PeggedStrategyInput):
     linearWidth,
   }).withSalt(salt);
 
-  const feeBps = input.makerFeeBps ?? 1;
+  const feeBps = input.makerFeeBps ?? 0;
   if (feeBps > 0) strat = strat.withFeeTokenIn(feeBps);
 
   const program = strat.build();
