@@ -48,14 +48,67 @@ Full lifecycle round-tripped against the **live deployed** router bytecode on th
 ### Go / no-go
 **GO.** Core mechanic (ship → quote → swap → dock, pegged strategy, live contracts) works end to end on a Base fork. No blockers for Phase 1.
 
-### Still open (next spike session — items 3, 4, 5 proper)
-- [ ] Item 3: repeat with **real Aave aUSDC / aUSDT**, advance fork time so aTokens rebase, confirm quote/swap/dock still correct **and yield stays in the wallet** (not swept into the pool).
-- [ ] Item 4: confirm aTokens `approve()` + Aqua `pull()` cleanly mid-swap (rebasing-balance edge cases).
-- [ ] Item 5: formal `dock()` idempotency + "already docked" handling for the keeper (preview looks good).
-- [ ] Confirm Aave v3 Base has both aUSDC and aUSDT listed (fallback aUSDbC).
+---
+
+## 2026-09-08 (cont.) — Phase 0 spike, items 3, 4, 5  ✅ PASS
+
+Spike rewritten in **TypeScript** (`spike/common.ts`, `spike/phase0.ts`, `spike/phase0b.ts`, `spike/run.sh`).
+`phase0b.ts` covers items 3–5. All green.
+
+### Reserve check (Aave v3 Base)
+`Pool.getReservesList()` + config bitmap: **USDT is NOT listed on Aave v3 Base.** USDbC is
+(active, unfrozen). Active USD stables on Aave v3 Base: **USDC**, **USDbC**, GHO, EURC, syrupUSDC.
+→ pegged pair for the aToken test = **aUSDC (`0x4e65…5c0AB`) / aUSDbC (`0x0a1d…1D54`)**.
+- Aave v3 Pool (Base): `0xA238Dd80C259a72e81d7e4664a9801593F98d1c5`
+
+### Item 4 — aToken → Aqua approve + pull → **YES**
+| Check | Result |
+|---|---|
+| `aUSDC.approve(Aqua, max)` | allowance set |
+| `aqua.ship([aUSDC, aUSDbC], [100k, 100k])` | success, 82 281 gas; virtual balances recorded |
+| `swapVM.swap()` 1 000 aUSDC → aUSDbC (EOA taker) | settled, **325 655 gas** (≈2× a plain-ERC20 swap — aToken transfers touch Aave's scaled-balance + index math) |
+| effect | taker received **999.975 aUSDbC**; Aqua `pull`ed aUSDbC straight from maker wallet `100 000 → 99 000.025` |
+
+*(The item-4 revert seen on the first attempt was a **test bug** — the taker had a 0 balance so the swap amount was 0. Not an aToken incompatibility.)*
+
+### Item 3 — rebase test (the critical one) → **YES, the thesis holds**
+Ship 50 000 aUSDC into a fresh strategy, **no swaps against it**, then `warp(+90 days)`:
+
+| Check | Result |
+|---|---|
+| Aave normalized income index | rose `1.14498e27 → 1.15565e27` |
+| maker aUSDC **wallet** balance | grew **+941.17 USDC** over 90 d (≈ 3.8 % APY on ~101 k) |
+| Aqua **virtual** balance | **unchanged — exactly 50 000** (yield was *not* swept into the pool) |
+| `swapVM.quote()` after the warp | still works, rate 0.99997 |
+| `aqua.dock()` | success, 35 860 gas; maker keeps **101 941 aUSDC** — principal + 90 d yield, fully liquid |
+
+**Conclusion:** the aToken keeps rebasing in the maker's wallet the whole time it is live
+Aqua liquidity; Aqua's virtual balance is a fixed number and never touches the yield.
+"One balance, two jobs" (Aave supply APY + Aqua fees) is **real**, not marketing.
+
+### Item 5 — `dock()` idempotency & guards (keeper safety) → **YES**
+After `dock()`:
+- `rawBalances` → `tokensCount == 255` (`_DOCKED` marker)
+- `safeBalances(...)` **reverts** (`SafeBalancesForTokenNotInActiveStrategy`)
+- second `dock()` **reverts** (`DockingShouldCloseAllTokens`, `0xbbe8d44d`)
+- `dock()` of a never-shipped hash **reverts**
+- `swap()` against a docked strategy **reverts**
+
+→ the keeper can retry `dock()` blindly; every stale path fails loudly instead of silently succeeding or double-spending.
+
+### Extra facts learned (Phase 1)
+- aToken swap gas ≈ 325 k vs ≈ 160 k for plain ERC-20 — budget for it in the keeper's gas estimates.
+- `AquaPeggedAmmStrategy` takes `reserve` per leg = the shipped amount; the pegged curve runs on Aqua's **virtual** balances (`safeBalances`), never the wallet balance — which is exactly why rebase yield is invisible to the AMM math.
+- USDbC balance storage slot on Base = **51** (USDC = 9); `deal()` in `common.ts` tries common slots first.
+- Spikes now self-salt each run, but `run.sh` still starts a **fresh fork** per run for determinism.
+
+### Phase 0 verdict
+**All 5 items pass. Phase 0 complete. GO for Phase 1** — the only real risk left is economic
+(depeg exit latency, thin stable-stable fee volume), not technical feasibility.
 
 ### How to reproduce
 ```bash
-anvil --fork-url https://base.drpc.org --fork-block-number $(( $(cast bn --rpc-url https://base.drpc.org) - 30 )) --silent &
-cd aqualadder/spike && node phase0.cjs
+cd aqualadder/spike && npm install
+npm run phase0     # items 1 & 2
+npm run phase0b    # items 3, 4, 5
 ```

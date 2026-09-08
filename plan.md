@@ -21,20 +21,22 @@ on top of `PositionState` (Phase 1) and the rule model (Phase 2) later.
 ## Phase 0 — De-risk spike (do first, ~half a day, blocks everything)
 
 One throwaway script against a Base fork. If it round-trips, the project is real. Answer these five, in order.
-Spike code: `spike/phase0.cjs`. Full results: `workdone.md`.
+Spike code: `spike/phase0.ts` (items 1–2), `spike/phase0b.ts` (items 3–5). Full results: `workdone.md`.
+**Status: all 5 items PASS. Phase 0 complete — GO for Phase 1.**
 
-1. ✅ **Are Aqua + AquaSwapVMRouter actually callable on the Base fork?** — **YES.** Both have bytecode on Base (`0x1111113CCf…` 5.6KB, `0x111111338c…` 20KB), read methods work. SDK address maps are **mainnet-only** → fork is the only path.
-2. ✅ **Does the pegged strategy run on today's pre-Fusaka deployment?** — **YES.** `ship → quote → swap → dock` round-tripped on the live router with a USDC/USDT ±0.5% pegged strategy; SDK hash matched `router.hash(order)`; quote returned 0.99997; EOA-taker swap settled (156k gas). Pegged opcode (`peggedSwapGrowPriceRange2D`, idx 32) proven to execute.
-3. ⬜ **Rebase test (the critical one).** After `ship()`, advance fork time / force an Aave index update so aTokens accrue. Then check: (a) `quote`/`swap` still work, (b) `dock()` returns the right amounts, (c) the accrued yield stayed in the user wallet and wasn't swept into the pool. This is what makes "3 jobs, 1 balance" true or false. *(Note from item 2: `ship()` is pure accounting and moves no tokens — the mechanic is plausible, but must be proven with a real rebasing aToken.)*
-4. ⬜ **aToken → Aqua approval + pull.** Confirm aTokens `approve()` cleanly to Aqua and that Aqua can `pull()` them mid-swap. *(Plain-ERC20 approve+pull already works; rebasing edge cases untested.)*
-5. 🟡 **`dock()` behavior.** Instant pure-accounting confirmed; second `dock()` reverts `DockingShouldCloseAllTokens`. Formalise the keeper's "already docked" handling.
+1. ✅ **Aqua + AquaSwapVMRouter callable on the Base fork** — bytecode present (`0x1111113CCf…`, `0x111111338c…`), read methods work. SDK address maps are **mainnet-only** → a fork is the only path.
+2. ✅ **Pegged strategy runs on today's pre-Fusaka deployment** — `ship → quote → swap → dock` round-tripped on the live router (USDC/USDbC ±0.5%); SDK hash matched `router.hash(order)`; quote 0.99997; EOA-taker swap settled. `peggedSwapGrowPriceRange2D` (opcode idx 32) proven to execute.
+3. ✅ **Rebase test (the critical one)** — shipped 50k aUSDC, warped +90 d: maker's **wallet** aUSDC grew +941 (≈3.8% APY); Aqua's **virtual** balance stayed exactly 50 000; quote/swap/dock still work; on dock the maker keeps principal + all yield, fully liquid. **"One balance, two jobs" is real.**
+4. ✅ **aToken → Aqua approval + pull** — `aUSDC.approve(Aqua)` + `ship` + a real swap that `pull`s aUSDbC from the maker mid-swap all work. aToken swap costs ≈325k gas (≈2× plain ERC-20).
+5. ✅ **`dock()` behavior** — instant pure-accounting; `_DOCKED` marker; `safeBalances`, a second `dock()`, a never-shipped `dock()`, and a swap-after-dock **all revert**. Keeper can retry safely.
 
-**Exit criteria:** `ship → (time passes, yield accrues) → quote → swap → dock` round-trips and yield is provably retained.
+**Exit criteria — met:** `ship → (90 d, yield accrues) → quote → swap → dock` round-trips and the yield is provably retained in the maker wallet.
 
 **Toolchain notes:**
-- 1inch SDKs' **ESM build is broken** — use CJS (`require`), not `import`.
-- anvil fork needs an **archive** RPC: `base.drpc.org` / `mainnet.base.org` / `base.meowrpc.com` work; `publicnode` / `llamarpc` 403 on archive.
-- `strategy` bytes for `ship` = `order.encode()` = `abi.encode((maker,traits,data))`; `strategyHash = keccak256(that)`. Program needs a `salt` for re-ship uniqueness (`StrategiesMustBeImmutable`).
+- 1inch SDKs' **ESM build is broken** — spike `tsconfig` compiles as CommonJS so `import`→`require`→working CJS build.
+- anvil fork needs an **archive** RPC: `mainnet.base.org` / `base.drpc.org` / `base.meowrpc.com` work; `publicnode` / `llamarpc` 403 on archive.
+- **USDT is not on Aave v3 Base** — pair is **aUSDC / aUSDbC**.
+- `strategy` bytes for `ship` = `order.encode()` = `abi.encode((maker,traits,data))`; `strategyHash = keccak256(that)`. Add a `salt` for re-ship uniqueness (`StrategiesMustBeImmutable`).
 
 ---
 
