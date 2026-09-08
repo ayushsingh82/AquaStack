@@ -112,3 +112,61 @@ cd aqualadder/spike && npm install
 npm run phase0     # items 1 & 2
 npm run phase0b    # items 3, 4, 5
 ```
+
+---
+
+## 2026-09-08 (cont.) — Phase 1 modules 1 & 2  ✅ PASS  (not committed yet)
+
+Built `src/lib/aqua/` — pure viem functions, no UI imports. Fork-tested via
+`scripts/phase1.fork.ts` (`npm run phase1:fork`).
+
+| File | Module |
+|---|---|
+| `constants.ts` | Base addresses (Aqua, router, Aave, USDC/USDbC/aUSDC/aUSDbC, Aerodrome) + ABIs |
+| `types.ts` | `TxStep`, `OrderTuple`, `TokenLeg` |
+| `strategy.ts` | **module 2** — `buildPeggedStrategy(maker, input)` → `{ order, orderTuple, strategyBytes, strategyHash, program }`. One knob: `pegBand` (number or `tight`/`balanced`/`wide` preset). Random uint64 salt by default. |
+| `deposit.ts` | **module 1** — `buildDeposit({ user, usdcAmount, pegBand, ... })` → `DepositPlan` with 9 ordered `steps[]`, `shipStepIndex`, `shipStep(a,b)` and `balancedShipStep(realA, realB)` |
+
+### Deposit flow (9 steps)
+`approve USDC→Aerodrome · swap ½ USDC→USDbC · approve USDC→Aave · supply USDC · approve USDbC→Aave · supply USDbC · approve aUSDC→Aqua · approve aUSDbC→Aqua · aqua.ship(pegged aUSDC/aUSDbC)`
+
+### Fork test result (1 000 USDC deposit, fresh Base fork)
+- `strategyHash` == on-chain `router.hash(order)` ✓
+- all 8 pre-ship steps execute; post-supply: **500.00 aUSDC / 495.00 aUSDbC**
+- `balancedShipStep` ships **495/leg**, leaves 5 aUSDC in-wallet (still Aave-earning)
+- Aqua virtual balances == shipped; ship moved no tokens ✓
+- `quote()` on the shipped strategy: 100 aUSDbC → 99.939 aUSDC (rate 0.99939) ✓
+
+### ⚠️ Phase 1 finding — USDbC liquidity on Base is thin
+DEX liquidity for the USDC↔USDbC half-swap, at the pinned fork block:
+
+| Venue | ~USDC in pool |
+|---|---|
+| Aerodrome stable pool | ~15 600 |
+| Uniswap v3 0.01% | ~9 000 |
+| Uniswap v3 0.05% | ~3 000 |
+
+GHO on Base: ~6k (Uni 0.3%) — also too thin. EURC has ~34k but it's EUR, not a $-peg.
+
+**Implication:** the "deposit USDC → split to USDbC" flow only works for small
+deposits (demo scale). Uses the **Aerodrome stable pool** (deepest remaining).
+For a real product, two options:
+1. mint the second leg via an **Aave borrow-loop** (supply aUSDC, borrow USDbC, supply that) — the canonical Aqua "collateral loop", no DEX swap; adds borrow-rate cost + liquidation risk.
+2. pick a different pegged pair on a chain with real stable-stable depth.
+The lib isolates the swap in one `swapExactIn()` helper, so switching venue/mechanism later is a one-function change.
+
+### Config changes
+- `next.config.ts`: `serverExternalPackages` for the 4 `@1inch/*` packages (broken ESM → native `require` picks the CJS build). **Server-only — never import the Aqua lib into a Client Component.**
+- `tsconfig.json`: `target` ES2017 → **ES2020** (BigInt literals); `exclude` adds `spike`, `scripts`.
+- `scripts/tsconfig.json`: CommonJS config for the fork tests.
+- app deps: `viem`, `@1inch/aqua-sdk`, `@1inch/swap-vm-sdk`, `@1inch/sdk-core`, `tsx` (dev).
+
+### Next
+- Module 3 `position.ts` (read model), module 4 `unwind.ts` (dock + optional Aave withdraw).
+- Decide swap-vs-borrow-loop for the second leg before wiring a real UI.
+
+### How to reproduce
+```bash
+cd aqualadder && npm install
+npm run phase1:fork   # fresh Base fork + deposit.ts/strategy.ts end-to-end
+```
