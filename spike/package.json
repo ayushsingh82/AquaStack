@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "phase0": "./run.sh phase0",
+    "phase0b": "./run.sh phase0b"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +15,10 @@
     "@1inch/aqua-sdk": "^0.3.1",
     "@1inch/swap-vm-sdk": "^0.4.1",
     "viem": "^2.56.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   }
 }
