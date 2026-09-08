@@ -9,7 +9,8 @@
     "lint": "eslint",
     "phase1:fork": "./scripts/run-fork.sh phase1.fork",
     "phase1b:fork": "./scripts/run-fork.sh phase1b.fork",
-    "phase2:test": "tsx scripts/phase2.test.ts"
+    "phase2:test": "tsx scripts/phase2.test.ts",
+    "phase3:fork": "./scripts/run-fork.sh phase3.fork"
   },
   "dependencies": {
     "@1inch/aqua-sdk": "^0.3.1",

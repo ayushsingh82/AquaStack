@@ -276,3 +276,55 @@ Done. Next: **Phase 3 keeper** — cron that for each `active` record: `readPosi
 ```bash
 npm run phase2:test    # pure unit test, no fork
 ```
+
+---
+
+## 2026-09-08 (cont.) — Phase 3: keeper  ✅ PASS  (not committed yet)
+
+`src/lib/keeper/` — glue over `readPosition` / `evaluate` / `buildUnwind`.
+Fork-tested via `scripts/phase3.fork.ts` (`npm run phase3:fork`), 10 checks green.
+
+### 1. Cron entrypoint (`run.ts`)
+`runKeeperOnce(deps) → TickResult[]` — one pass over `store.list({status:'active'})`
+plus `{status:'alerting'}` (re-checked in case a signer got attached or the rule
+cleared). `unwound` records are terminal. Per-record errors are caught and
+returned, never abort the pass. Wire to a Vercel Cron route / interval worker.
+
+### 2. Per-position tick (`tick.ts`)
+`tickPosition(deps, record)`:
+- `Order.decode(record.strategyBytes)` → `readPosition` → `evaluate(pos, rule, {peakReturnBps})`
+- **always** persists `nextContext.peakReturnBps` (max-drawdown memory), even on `hold`
+- `hold` → nothing; `alert` → notify + `status:'alerting'`; `unwind` → `buildUnwind({withdrawFromAave:true})`, send each step via the signer, store `status:'unwound'` + tx hashes, notify
+
+### 3. Guards (`tick.ts`)
+- `action:'unwind'` but `signerFor()` → null: `unwind-needed-no-signer` event, falls back to `status:'alerting'` (no lost trigger)
+- `buildUnwind` returns `alreadyDocked`: mark `unwound`, zero txs (idempotent — survives a dock that landed but a store write that didn't)
+- a failed unwind step: `unwind-failed` event with the partial tx list, record left actionable
+
+### Signer + notifier
+- `PositionSigner { address, sendStep(step) }` interface. `LocalKeySigner` (viem account) for dev/tests; a Privy-session-signer impl of the same interface is the production path (scoped to `dock()` + Aave `withdraw()`).
+- `Notifier` + `consoleNotifier`; swap for Slack/webhook/push.
+
+### Fork test (`phase3.fork.ts`)
+deposit → persist `PositionRecord` (rule: take-profit +20bps) →
+`runKeeperOnce` **hold** → warp 40 d (Aave yield → total return **36.3 bps**) →
+`autoUnwind:false` → **alert** (`alerting`) →
+no signer → **alert** (no-signer fallback, `alerting`) →
+signer attached → **unwound**: 3 txs (dock + 2 withdraws), record `unwound` + hashes,
+**502 USDC back** to wallet → `runKeeperOnce` → **0 ticks** (terminal).
+`Order.decode(strategyBytes)` round-trips exactly.
+
+### Notes
+- `PositionRecord` gained `legA` / `legB` / `strategyBytes` / `unwoundAt` / `unwindTxHashes`.
+- Taker swaps on a tight pegged pool are flaky as a test trigger (simulate OK, tx reverts intermittently); the keeper test uses a pure time-warp → Aave-yield → take-profit instead. Swap execution itself is already covered by phases 0b / 1b.
+
+### Phase status — 0, 1, 2, 3 all done
+Remaining: the **web UI** (deposit flow over `buildDeposit`, dashboard over
+`readPosition`, rule config writing `PositionRecord`) and the **Privy session
+signer** wiring for a live keeper. Plus the open swap-vs-borrow-loop decision for
+the second leg.
+
+### How to reproduce
+```bash
+npm run phase3:fork    # keeper end-to-end on a fresh Base fork
+```
