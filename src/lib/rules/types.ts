@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem';
+import type { TokenLeg } from '../aqua/types';
 
 /**
  * The protective rule attached to one AquaLadder position.
@@ -65,6 +66,11 @@ export interface PositionRecord {
   chainId: number;
   createdAt: number;
   rule: Rule;
+  /** the two pegged legs (token + aToken + decimals) */
+  legA: TokenLeg;
+  legB: TokenLeg;
+  /** `order.encode()` for the shipped strategy — decoded back to an Order for the quote probe */
+  strategyBytes: Hex;
   /** ship-time inputs for readPosition() */
   shippedPrincipalA: bigint;
   shippedPrincipalB: bigint;
@@ -76,6 +82,9 @@ export interface PositionRecord {
   status: 'active' | 'alerting' | 'unwound';
   /** running peak for max-drawdown (mirrors EvalContext.peakReturnBps) */
   peakReturnBps?: number;
+  /** set once the keeper unwinds */
+  unwoundAt?: number;
+  unwindTxHashes?: Hex[];
 }
 
 export interface RuleStore {
