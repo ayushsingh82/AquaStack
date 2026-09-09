@@ -16,6 +16,59 @@ const CORNER: Record<string, string> = {
   br: 'bottom-0 right-0 border-b-2 border-r-2',
 };
 
+/* Stylised protocol marks (not official logos — drop real SVGs in /public/logos/ to swap). */
+function GlyphUSDC({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M12 6.5v11M9.2 9.4c0-1.2 1.3-2 2.8-2s2.8.8 2.8 2-1.1 1.7-2.8 2.1c-1.7.4-2.8.9-2.8 2.1s1.3 2 2.8 2 2.8-.8 2.8-2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function GlyphAave({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        d="M4 20 11 5c.4-.9 1.6-.9 2 0l7 15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8.4 14.5h7.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="10.25" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
+    </svg>
+  );
+}
+function GlyphAqua({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        d="M12 3c3.6 4.2 6.5 7.6 6.5 11.1A6.5 6.5 0 0 1 12 20.6a6.5 6.5 0 0 1-6.5-6.5C5.5 10.6 8.4 7.2 12 3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M9 14.2a3 3 0 0 0 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ProtocolTag({ glyph, label }: { glyph: 'usdc' | 'aave' | 'aqua'; label: string }) {
+  const G = glyph === 'usdc' ? GlyphUSDC : glyph === 'aave' ? GlyphAave : GlyphAqua;
+  return (
+    <span className="inline-flex items-center gap-1.5 border border-white/15 px-2 py-1 text-[11px] text-neutral-300">
+      <G className="h-3.5 w-3.5" />
+      {label}
+    </span>
+  );
+}
+
 const FEATURES = [
   {
     n: '01',
@@ -68,11 +121,23 @@ const FEATURES = [
   },
 ];
 
-const FLOW = [
-  ['1,000 USDC', 'you deposit'],
-  ['≈ 495 aUSDC + 495 aUSDbC', 'split, supplied to Aave, shipped to Aqua'],
-  ['+36 bps', 'total return after 40 days — trips the take-profit rule'],
-  ['502.05 USDC', 'keeper unwinds; principal + yield back in your wallet'],
+const FLOW: { big: string; small: string; tag?: string }[] = [
+  { big: '1,000 USDC', small: 'you deposit — one signature', tag: 'deposit' },
+  {
+    big: '≈ 495 aUSDC + 495 aUSDbC',
+    small: 'half swapped, both legs supplied to Aave v3, shipped to 1inch Aqua',
+    tag: 'Aave + Aqua',
+  },
+  {
+    big: '+36 bps',
+    small: 'total return after 40 days — Aave APY + Aqua spread trips the take-profit rule',
+    tag: 'rule fires',
+  },
+  {
+    big: '502.05 USDC',
+    small: 'keeper docks the Aqua position and withdraws from Aave — principal + yield, back in your wallet',
+    tag: 'protected exit',
+  },
 ];
 
 const STACK = [
@@ -187,24 +252,56 @@ export default function Home() {
           <p className="mb-3 text-xs font-semibold tracking-[0.2em]" style={{ color: ACCENT }}>
             THE FLOW
           </p>
-          <h2 className="mb-16 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="mb-6 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
             From a fork test — deposit to protected exit.
           </h2>
-          <div className="relative max-w-3xl">
-            <div className="absolute bottom-2 left-[7px] top-2 w-px bg-white/15" />
-            <ol className="space-y-9">
-              {FLOW.map(([big, small], i) => (
-                <li key={i} className="relative pl-10">
-                  <span
-                    className="absolute left-0 top-1 h-[15px] w-[15px] rounded-full border-2 bg-black"
-                    style={{ borderColor: ACCENT }}
-                  />
-                  <p className="font-mono text-lg font-medium text-white">{big}</p>
-                  <p className="mt-1 text-sm text-neutral-400">{small}</p>
-                </li>
-              ))}
-            </ol>
+          <div className="mb-12 flex flex-wrap items-center gap-2">
+            <ProtocolTag glyph="usdc" label="USDC" />
+            <span className="text-neutral-600">→</span>
+            <ProtocolTag glyph="aave" label="Aave v3" />
+            <span className="text-neutral-600">+</span>
+            <ProtocolTag glyph="aqua" label="1inch Aqua" />
+            <span className="text-neutral-600">→</span>
+            <ProtocolTag glyph="usdc" label="USDC + yield" />
           </div>
+
+          <ol className="grid gap-4 lg:grid-cols-4">
+            {FLOW.map((step, i) => (
+              <li key={i} className="relative border border-white/15 bg-black p-5">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2"
+                  style={{ borderColor: ACCENT }}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs" style={{ color: ACCENT }}>
+                    0{i + 1}
+                  </span>
+                  {step.tag && (
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-600">
+                      {step.tag}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 font-mono text-base font-medium leading-snug text-white">
+                  {step.big}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-neutral-400">{step.small}</p>
+                {i < FLOW.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-3 top-1/2 hidden -translate-y-1/2 text-neutral-600 lg:block"
+                  >
+                    →
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-6 text-xs text-neutral-600">
+            Numbers from <span className="font-mono text-neutral-400">npm run phase3:fork</span> —
+            executed against the live Aqua + Aave v3 contracts on a Base mainnet fork.
+          </p>
         </div>
       </section>
 
@@ -217,28 +314,62 @@ export default function Home() {
           <h2 className="mb-16 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
             Four layers. All fork-tested against live contracts.
           </h2>
-          <div className="divide-y divide-white/10 border-y border-white/15">
-            {STACK.map(([name, desc]) => (
-              <div key={name} className="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:gap-8">
-                <p
-                  className="min-w-[11rem] border-l-2 pl-3 font-mono text-sm font-medium"
-                  style={{ borderColor: ACCENT, color: ACCENT }}
-                >
-                  {name}
-                </p>
-                <p className="text-sm text-neutral-400">{desc}</p>
+
+          {/* layered stack */}
+          <div className="space-y-3">
+            <div className="border border-white/15 bg-black px-5 py-4">
+              <p className="font-mono text-sm font-medium" style={{ color: ACCENT }}>
+                src/app · src/components/app
+              </p>
+              <p className="mt-1 text-sm text-neutral-400">
+                Next.js App Router — deposit wizard, position dashboard, keeper console. All chain
+                access via <span className="font-mono text-neutral-300">&apos;use server&apos;</span> actions;
+                wallet through Privy.
+              </p>
+            </div>
+
+            <div className="flex justify-center text-neutral-700" aria-hidden>
+              ▼
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {STACK.slice(0, 3).map(([name, desc]) => (
+                <div key={name} className="border border-white/15 bg-black p-4">
+                  <p className="font-mono text-sm font-medium" style={{ color: ACCENT }}>
+                    {name}
+                  </p>
+                  <p className="mt-1.5 text-xs leading-5 text-neutral-400">{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-center text-neutral-700" aria-hidden>
+              ▼
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-white/15 bg-black px-5 py-4">
+              <p className="text-sm text-neutral-400">
+                Base mainnet — real deployed contracts, no testnet
+              </p>
+              <div className="flex gap-2">
+                <ProtocolTag glyph="aqua" label="1inch Aqua + SwapVM" />
+                <ProtocolTag glyph="aave" label="Aave v3" />
               </div>
-            ))}
+            </div>
           </div>
+
           <div className="mt-10">
             <p className="mb-3 text-xs tracking-[0.15em] text-neutral-500">DEPLOYED ON BASE · CHAIN 8453</p>
             <div className="flex flex-wrap gap-2 text-xs">
               {[
-                ['Aqua', '0x1111113CCf…'],
-                ['AquaSwapVMRouter', '0x111111338c…'],
-                ['Aave v3 Pool', '0xA238Dd80C2…'],
+                ['Aqua', '0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a'],
+                ['AquaSwapVMRouter', '0x111111338c5091E8440b67B168bAe16a668AC0De'],
+                ['Aave v3 Pool', '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'],
               ].map(([label, addr]) => (
-                <span key={label} className="border border-white/15 px-3 py-1.5 font-mono text-neutral-300">
+                <span
+                  key={label}
+                  className="max-w-full truncate border border-white/15 px-3 py-1.5 font-mono text-neutral-300"
+                >
                   <span className="text-neutral-500">{label}</span> {addr}
                 </span>
               ))}
