@@ -11,12 +11,14 @@ import type { TxStep } from '@/lib/aqua/types';
 import { shortHash } from '@/lib/format';
 import { ACCENT } from '@/lib/addresses';
 import { Button } from '@/components/app/ui';
+import { useToast } from '@/components/app/Toast';
 
 type Plan = { steps: TxStep[]; alreadyDocked: boolean; status: string };
 type Phase = 'idle' | 'confirm' | 'running' | 'done' | 'error';
 
 export function UnwindNow({ record, onDone }: { record: PositionRecord; onDone: () => void }) {
   const { address } = useAccount();
+  const toast = useToast();
   const chainId = useChainId();
   const client = usePublicClient();
   const { sendTransactionAsync } = useSendTransaction();
@@ -43,6 +45,7 @@ export function UnwindNow({ record, onDone }: { record: PositionRecord; onDone: 
         await markUnwoundAction(address, record.strategyHash, []);
         setPhase('done');
         setNote('Already docked — position marked unwound.');
+        toast('info', 'Position was already docked — marked unwound.');
         setTimeout(onDone, 1200);
         return;
       }
@@ -60,10 +63,13 @@ export function UnwindNow({ record, onDone }: { record: PositionRecord; onDone: 
       await markUnwoundAction(address, record.strategyHash, hashes);
       setPhase('done');
       setNote('Position unwound. Funds are back in your wallet.');
+      toast('success', 'Position unwound — funds are back in your wallet.');
       setTimeout(onDone, 1400);
     } catch (e) {
-      setError((e instanceof Error ? e.message : String(e)).split('\n')[0]);
+      const msg = (e instanceof Error ? e.message : String(e)).split('\n')[0];
+      setError(msg);
       setPhase('error');
+      toast('error', `Unwind failed: ${msg}`);
     }
   }
 

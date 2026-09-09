@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import type { Address, Hex } from 'viem';
 import { ruleStore } from '@/lib/server/store';
 import { publicClient } from '@/lib/server/client';
-import { keeperSignerFor } from '@/lib/server/keeper-signer';
+import { keeperSignerFor, keeperSignerInfo } from '@/lib/server/keeper-signer';
+import { appendKeeperRun, listKeeperRuns } from '@/lib/server/keeper-log';
 import { evaluateRecord } from '@/lib/server/api';
 import { toClient } from '@/lib/serialize';
 import { buildDeposit, type DepositInput } from '@/lib/aqua/deposit';
@@ -176,7 +177,18 @@ export async function runKeeperAction() {
     notify: consoleNotifier,
   };
   const results = await runKeeperOnce(deps);
+  await appendKeeperRun(results);
   revalidatePath('/app');
   revalidatePath('/app/keeper');
   return toClient(results);
+}
+
+/** Task 21: recent keeper runs (newest first) for the activity log. */
+export async function getKeeperLogAction() {
+  return toClient(await listKeeperRuns());
+}
+
+/** Task 22: what the keeper can sign with (local demo key, or nothing → alert-only). */
+export async function getKeeperStatusAction() {
+  return toClient(keeperSignerInfo());
 }

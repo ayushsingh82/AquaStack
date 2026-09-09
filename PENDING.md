@@ -4,11 +4,11 @@ Backend (Phases 0–3) is **done and fork-tested**: `buildDeposit`, `buildPegged
 `readPosition`, `buildUnwind`, `evaluate`, `RuleStore`, keeper (`runKeeperOnce` /
 `tickPosition`). Landing page (`/`) is done.
 
-**1–20 are done** (not committed): the `/app` shell, deposit wizard, positions
-dashboard + detail page (activity / rule editor / unwind), and the keeper console
-(run + verdict table). `next build` + `tsc` clean. Still pending: 21–25 (keeper
-activity log, session-signer flow, polish, demo scripts). Nothing below is
-verified against a live fork + wallet yet.
+**1–23 are done** (16–20 committed; 21–23 not committed): the `/app` shell,
+deposit wizard, positions dashboard + detail page (activity / rule editor /
+unwind), keeper console (run + verdict table + run history + signer status), and
+a toast system. `next build` + `tsc` clean. Still pending: 24–25 (demo fork
+scripts). Nothing below is verified against a live fork + wallet yet.
 
 ---
 
@@ -32,7 +32,7 @@ state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
 
 > Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
-## Positions — 11–18 ✅ DONE (not committed)
+## Positions — 11–15 committed · 16–18 committed
 Server actions `getPositionsAction` / `getPositionAction` / `getKeeperVerdictsAction` (in `actions.ts`, use `evaluateRecord`).
 `lib/format.ts` (client-safe `usd` / `bpsPct` / `shortHash` / `timeAgo`).
 `lib/rule-form.ts` (shared `RuleForm` / `fromRule` / `toRule` / `ruleSummary` / `describeReason` — extracted from the deposit wizard).
@@ -48,26 +48,26 @@ Server actions `getPositionsAction` / `getPositionAction` / `getKeeperVerdictsAc
 17. ✅ **`/app/position/[hash]` edit rule** — `components/app/position/RuleEditor.tsx`: collapsed rule summary → inline preset chips + 4 bps inputs + autoUnwind toggle → `saveRuleAction`, reloads on save.
 18. ✅ **`/app/position/[hash]` unwind now** — `components/app/position/UnwindNow.tsx`: confirm → `prepareUnwindAction` (optional Aave withdraw toggle) → sign each step (wagmi) → `markUnwoundAction`; handles `alreadyDocked` and the terminal `unwound` state.
 
-## Keeper — 19–20 ✅ DONE (not committed) · 21–22 pending
+## Keeper — 19–20 committed · 21–22 ✅ DONE (not committed)
 `/app/keeper` route → `components/app/keeper/KeeperConsole.tsx`.
 
-19. ✅ **`/app/keeper` run** — "Run keeper now" → `runKeeperAction` (`runKeeperOnce`) → "last run" card listing each `TickResult` (hash · action · detail · tx hashes).
+19. ✅ **`/app/keeper` run** — "Run keeper now" → `runKeeperAction` (`runKeeperOnce`) → toast summary + each `TickResult` in the run history.
 20. ✅ **`/app/keeper` verdict table** — `getKeeperVerdictsAction` dry-runs `evaluateRecord` over every active/alerting position (all users, no writes); table of position · status · return · peg dev · verdict (hold/alert/unwind) · reason.
-21. **`/app/keeper` activity log** — history of runs / unwinds / alerts.
-22. **Session signer** — Privy session signer authorize flow (or a local-key "demo keeper" fallback).
+21. ✅ **`/app/keeper` activity log** — `lib/server/keeper-log.ts` (`.data/keeper-log.json`, last 50 runs); `runKeeperAction` appends each pass; `getKeeperLogAction` → a "run history" list in the console (per-run: time, tick count, per-position action / detail / tx hashes).
+22. ✅ **Session signer** — `keeperSignerInfo()` + `getKeeperStatusAction` surface the signer state in the console: local demo key (`KEEPER_PRIVATE_KEY`, anvil acct 0 for the fork) → auto-unwind armed; nothing set → "alert only", with a pointer to wire a Privy session signer in `keeper-signer.ts`. `.env.example` documents the key.
 
-## Polish — pending
-23. **Loading / error / toast states** across the flows.
+## Polish — 23 ✅ DONE (not committed)
+23. ✅ **Loading / error / toast states** — `components/app/Toast.tsx` (`ToastProvider` in `/app/layout.tsx` + `useToast()`); success/error toasts wired into the rule editor, unwind flow and keeper run. Loading/empty/error states already on every list + panel.
+
+## Demo scripts — pending
 24. **Seed script for the demo** — deposit + a counterparty doing swaps, so the dashboard shows live numbers.
 25. **Depeg demo script** — push the pool off peg on the fork to show the rule fire.
 
 ---
 
 ## Minimum demo path
-**1–20 done · still need 24** (seed script) → deposit a position, see it on the
-dashboard, run the keeper, watch it unwind, funds back in the wallet.
-
-Everything else (21, 22, 23, 25) is polish.
+**1–23 done · still need 24–25** → deposit a position, see it on the dashboard,
+run the keeper, watch it unwind, funds back in the wallet.
 
 ## Also open (from earlier findings)
 - **Swap vs Aave borrow-loop** for the second leg — USDbC DEX liquidity is thin (~$15k), so the swap-based deposit is demo-scale. Fine for the demo; a real product mints leg B via a borrow-loop.

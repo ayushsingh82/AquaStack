@@ -2,15 +2,21 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getKeeperVerdictsAction, runKeeperAction } from '@/app/app/actions';
+import {
+  getKeeperVerdictsAction,
+  getKeeperLogAction,
+  getKeeperStatusAction,
+  runKeeperAction,
+} from '@/app/app/actions';
 import { fromClient } from '@/lib/serialize';
 import type { PositionState } from '@/lib/aqua/position';
 import type { EvalResult, PositionRecord } from '@/lib/rules/types';
-import type { TickResult } from '@/lib/keeper/types';
-import { bpsPct, shortHash } from '@/lib/format';
+import type { TickResult, KeeperRun } from '@/lib/keeper/types';
+import { bpsPct, shortHash, timeAgo } from '@/lib/format';
 import { describeReason } from '@/lib/rule-form';
 import { ACCENT } from '@/lib/addresses';
-import { Button, Card } from '@/components/app/ui';
+import { Button } from '@/components/app/ui';
+import { useToast } from '@/components/app/Toast';
 
 type Verdict = {
   record: PositionRecord;
@@ -18,6 +24,7 @@ type Verdict = {
   result: EvalResult | null;
   error: string | null;
 };
+type SignerInfo = { kind: 'local-key' | 'none'; address?: string };
 
 const ACTION: Record<string, string> = {
   hold: '#4ade80',
@@ -29,36 +36,48 @@ const ACTION: Record<string, string> = {
 };
 
 export function KeeperConsole() {
+  const toast = useToast();
   const [verdicts, setVerdicts] = useState<Verdict[] | null>(null);
+  const [runs, setRuns] = useState<KeeperRun[] | null>(null);
+  const [signer, setSigner] = useState<SignerInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
-  const [runResults, setRunResults] = useState<TickResult[] | null>(null);
-  const [ranAt, setRanAt] = useState<string>('');
-  const [error, setError] = useState('');
 
-  const loadVerdicts = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      setVerdicts(fromClient<Verdict[]>(await getKeeperVerdictsAction()));
+      const [v, l, s] = await Promise.all([
+        getKeeperVerdictsAction(),
+        getKeeperLogAction(),
+        getKeeperStatusAction(),
+      ]);
+      setVerdicts(fromClient<Verdict[]>(v));
+      setRuns(fromClient<KeeperRun[]>(l));
+      setSigner(fromClient<SignerInfo>(s));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadVerdicts();
-  }, [loadVerdicts]);
+    void load();
+  }, [load]);
 
   async function run() {
     setRunning(true);
-    setError('');
     try {
       const results = fromClient<TickResult[]>(await runKeeperAction());
-      setRunResults(results);
-      setRanAt(new Date().toLocaleTimeString());
-      await loadVerdicts();
+      const unwound = results.filter((r) => r.action === 'unwound').length;
+      const alerts = results.filter((r) => r.action === 'alert').length;
+      toast(
+        unwound ? 'error' : alerts ? 'info' : 'success',
+        results.length === 0
+          ? 'Keeper ran — no positions to tick.'
+          : `Keeper ticked ${results.length}: ${results.filter((r) => r.action === 'hold').length} hold · ${alerts} alert · ${unwound} unwound.`,
+      );
+      await load();
     } catch (e) {
-      setError((e instanceof Error ? e.message : String(e)).split('\n')[0]);
+      toast('error', `Keeper run failed: ${(e instanceof Error ? e.message : String(e)).split('\n')[0]}`);
     } finally {
       setRunning(false);
     }
@@ -83,34 +102,26 @@ export function KeeperConsole() {
         </Button>
       </div>
 
-      {error && <p className="mt-4 text-xs text-red-400">{error}</p>}
-
-      {/* ── Run output (task 19) ── */}
-      {runResults && (
-        <Card className="mt-6">
-          <p className="text-xs font-semibold tracking-[0.18em]" style={{ color: ACCENT }}>
-            LAST RUN {ranAt && `· ${ranAt}`}
-          </p>
-          {runResults.length === 0 ? (
-            <p className="mt-3 text-sm text-neutral-500">No positions to tick.</p>
-          ) : (
-            <ul className="mt-3 space-y-2 text-sm">
-              {runResults.map((r) => (
-                <li key={r.strategyHash} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="font-mono text-xs text-neutral-500">{shortHash(r.strategyHash)}</span>
-                  <span style={{ color: ACTION[r.action] ?? '#fff' }}>{r.action}</span>
-                  <span className="text-neutral-400">{r.detail}</span>
-                  {r.txHashes && r.txHashes.length > 0 && (
-                    <span className="font-mono text-[11px] text-neutral-600">
-                      {r.txHashes.map((h) => shortHash(h)).join(', ')}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      )}
+      {/* ── Signer status (task 22) ── */}
+      <div className="mt-5 border border-white/15 px-4 py-3 text-xs">
+        {signer == null ? (
+          <span className="text-neutral-600">Checking keeper signer…</span>
+        ) : signer.kind === 'local-key' ? (
+          <span className="text-neutral-400">
+            Keeper signer:{' '}
+            <span className="font-mono text-neutral-200">{shortHash(signer.address ?? '')}</span> — local
+            demo key (<span className="text-neutral-500">KEEPER_PRIVATE_KEY</span>). Auto-unwind is armed.
+          </span>
+        ) : (
+          <span style={{ color: '#fbbf24' }}>
+            No keeper signer attached — runs can alert but not auto-unwind. Set{' '}
+            <span className="font-mono">KEEPER_PRIVATE_KEY</span> for the demo keeper, or wire a Privy
+            session signer scoped to <span className="font-mono">dock()</span> +{' '}
+            <span className="font-mono">withdraw()</span> in{' '}
+            <span className="font-mono">keeper-signer.ts</span>.
+          </span>
+        )}
+      </div>
 
       {/* ── Verdict table (task 20) ── */}
       <div className="mt-8">
@@ -118,10 +129,7 @@ export function KeeperConsole() {
           CURRENT VERDICTS
         </p>
 
-        {loading && !verdicts && (
-          <p className="mt-4 text-sm text-neutral-500">Reading positions…</p>
-        )}
-
+        {loading && !verdicts && <p className="mt-4 text-sm text-neutral-500">Reading positions…</p>}
         {verdicts && verdicts.length === 0 && (
           <p className="mt-4 text-sm text-neutral-500">No positions are being watched.</p>
         )}
@@ -189,6 +197,48 @@ export function KeeperConsole() {
           persisting the drawdown peak, flipping status to <span className="text-neutral-400">alerting</span>,
           or sending the unwind txs.
         </p>
+      </div>
+
+      {/* ── Activity log (task 21) ── */}
+      <div className="mt-10">
+        <p className="text-xs font-semibold tracking-[0.18em]" style={{ color: ACCENT }}>
+          RUN HISTORY
+        </p>
+
+        {runs && runs.length === 0 && (
+          <p className="mt-4 text-sm text-neutral-500">No keeper runs yet.</p>
+        )}
+
+        {runs && runs.length > 0 && (
+          <ol className="mt-4 space-y-4">
+            {runs.map((r) => (
+              <li key={r.at} className="border-l border-white/15 pl-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span className="text-sm text-neutral-300">
+                    {r.ticked === 0 ? 'No positions ticked' : `Ticked ${r.ticked} position${r.ticked > 1 ? 's' : ''}`}
+                  </span>
+                  <span className="text-[11px] text-neutral-600">{timeAgo(r.at)}</span>
+                </div>
+                {r.results.length > 0 && (
+                  <ul className="mt-1.5 space-y-1 text-xs">
+                    {r.results.map((t) => (
+                      <li key={t.strategyHash} className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="font-mono text-neutral-600">{shortHash(t.strategyHash)}</span>
+                        <span style={{ color: ACTION[t.action] ?? '#fff' }}>{t.action}</span>
+                        <span className="text-neutral-500">{t.detail}</span>
+                        {t.txHashes && t.txHashes.length > 0 && (
+                          <span className="font-mono text-neutral-700">
+                            {t.txHashes.map((h) => shortHash(h)).join(', ')}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   );

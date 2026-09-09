@@ -9,9 +9,11 @@ import { RULE_PRESETS, type RulePreset } from '@/lib/rules/types';
 import { fromRule, toRule, ruleSummary, RULE_FIELDS, type RuleForm } from '@/lib/rule-form';
 import { ACCENT } from '@/lib/addresses';
 import { Button } from '@/components/app/ui';
+import { useToast } from '@/components/app/Toast';
 
 export function RuleEditor({ record, onSaved }: { record: PositionRecord; onSaved: () => void }) {
   const { address } = useAccount();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<RuleForm>(() => fromRule(record.rule));
   const [saving, setSaving] = useState(false);
@@ -28,9 +30,12 @@ export function RuleEditor({ record, onSaved }: { record: PositionRecord; onSave
     try {
       fromClient(await saveRuleAction(address, record.strategyHash, toRule(form)));
       setOpen(false);
+      toast('success', 'Rule updated.');
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      toast('error', `Couldn't save the rule: ${msg.split('\n')[0]}`);
     } finally {
       setSaving(false);
     }

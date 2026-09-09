@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Providers } from '@/components/app/Providers';
+import { ToastProvider } from '@/components/app/Toast';
 import { ConnectButton } from '@/components/app/ConnectButton';
 import { NavLink } from '@/components/app/NavLink';
 
@@ -13,6 +14,7 @@ const NAV = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <Providers>
+      <ToastProvider>
       <div className="flex min-h-screen flex-col bg-black text-white">
         <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-black/70 px-6 py-3.5 backdrop-blur">
           <div className="flex items-center gap-8">
@@ -34,6 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">{children}</main>
       </div>
+      </ToastProvider>
     </Providers>
   );
 }

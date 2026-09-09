@@ -42,3 +42,11 @@ export interface TickResult {
   pegDeviationBps?: number;
   txHashes?: Hex[];
 }
+
+/** one recorded keeper pass, for the console's run history (task 21) */
+export interface KeeperRun {
+  at: number;
+  /** total positions ticked */
+  ticked: number;
+  results: TickResult[];
+}
