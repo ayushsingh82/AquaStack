@@ -29,9 +29,12 @@ state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
 
 > Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
-## Positions — pending
-11. **`/app` list** — `RuleStore.list({ user })`, row per position: status pill, principal, total return, peg deviation, rule summary.
-12. **`/app` empty state** — CTA to `/app/deposit`.
+## Positions — 11–12 ✅ DONE (not committed) · 13–18 pending
+Server action `getPositionsAction` (in `actions.ts`, uses `evaluateRecord`).
+`lib/format.ts` (client-safe `usd` / `bpsPct` / `shortHash` / `timeAgo`).
+
+11. ✅ **`/app` list** — `components/app/positions/PositionsList.tsx`: rows with status pill, short hash, `$principal`, total-return bps (green/red), peg deviation, age. Row → `/app/position/[hash]`.
+12. ✅ **`/app` empty state** — "No positions yet" + "Open your first position" CTA; plus a "connect a wallet" state.
 13. **`/app/position/[hash]` balances panel** — per-leg virtual vs wallet aToken, principal, shipped amount.
 14. **`/app/position/[hash]` yield panel** — Aave yield, Aqua PnL, total return bps.
 15. **`/app/position/[hash]` peg gauge** — current quote / deviation, rule thresholds marked.

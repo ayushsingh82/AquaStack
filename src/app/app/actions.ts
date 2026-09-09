@@ -5,6 +5,7 @@ import type { Address, Hex } from 'viem';
 import { ruleStore } from '@/lib/server/store';
 import { publicClient } from '@/lib/server/client';
 import { keeperSignerFor } from '@/lib/server/keeper-signer';
+import { evaluateRecord } from '@/lib/server/api';
 import { toClient } from '@/lib/serialize';
 import { buildDeposit, type DepositInput } from '@/lib/aqua/deposit';
 import { aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
@@ -82,6 +83,23 @@ export async function recordDepositAction(rec: {
   await ruleStore.put(record);
   revalidatePath('/app');
   return toClient({ ok: true });
+}
+
+/** Task 11: list the user's positions with their live state + rule verdict. */
+export async function getPositionsAction(user: Address) {
+  const records = await ruleStore.list({ user });
+  records.sort((a, b) => b.createdAt - a.createdAt);
+  const rows = await Promise.all(
+    records.map(async (record) => {
+      try {
+        const { pos, result } = await evaluateRecord(record);
+        return { record, pos, result, error: null as string | null };
+      } catch (e) {
+        return { record, pos: null, result: null, error: e instanceof Error ? e.message : String(e) };
+      }
+    }),
+  );
+  return toClient(rows);
 }
 
 /** Task 17: update the rule on a position. */
