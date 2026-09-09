@@ -120,6 +120,31 @@ every stale path (second `dock()`, dock-never-shipped, swap-after-dock) reverts.
 
 ---
 
+## The web app
+
+A Next.js App-Router frontend sits on top of the libraries. Every on-chain read
+and the tx-plan builders run in server actions (`src/app/app/actions.ts`); the
+client signs with the user's wallet (Privy embedded wallet + wagmi, with a plain
+injected-wallet fallback when Privy isn't configured).
+
+| Route | What it does |
+| --- | --- |
+| `/` | landing page |
+| `/app` | positions list — status, principal, total return, peg deviation |
+| `/app/deposit` | 4-step wizard: amount → peg band → rule → sign the 9-tx deposit plan |
+| `/app/position/[hash]` | one position: per-leg balances, the 3 yield components, peg gauge, activity feed, inline rule editor, "unwind now" |
+| `/app/keeper` | keeper console: run a pass, a dry-run verdict table over every watched position, run history, and the signer status |
+
+Demo scripts write to the same JSON store the app reads, so a position opened on
+a fork shows up on the dashboard immediately:
+
+```bash
+npm run seed:fork     # open a position + a counterparty running swaps + time warps
+npm run depeg:fork    # tight-rule position + a whale swap that pushes the pool off peg
+```
+
+---
+
 ## Architecture
 
 ```
@@ -144,7 +169,16 @@ src/lib/keeper/      the automated watcher — glue over the three above
   signer.ts          PositionSigner iface + LocalKeySigner (Privy impl = prod)
   notify.ts          Notifier + consoleNotifier
 
-scripts/             fork tests + the pure unit test
+src/app/             Next.js app (App Router)
+  page.tsx           landing page
+  app/               the product — /app (positions), /app/deposit (wizard),
+                     /app/position/[hash] (detail), /app/keeper (console)
+  app/actions.ts     'use server' — the only bridge from the client to the libs
+src/lib/server/      server-only wiring: viem client, JSON stores, keeper signer
+src/components/app/   client UI — deposit wizard, position panels, keeper console,
+                     wallet providers (Privy + wagmi), toasts
+
+scripts/             fork tests · the pure unit test · seed + depeg demo scripts
 ```
 
 **Non-custodial.** The user's own wallet is the Aqua maker; AquaLadder never
@@ -184,8 +218,8 @@ Aave `withdraw()` only — nothing else.
 | 1 | Integration library — `deposit` · `strategy` · `position` · `unwind` | ✅ fork-tested |
 | 2 | Rule engine + store — `evaluate` · `RuleStore` | ✅ unit-tested |
 | 3 | Keeper — `run` · `tick` · signer · notifier | ✅ fork-tested |
-| — | Web UI — deposit flow, position dashboard, rule config | ⬜ |
-| — | Privy session-signer wiring for a live keeper | ⬜ |
+| 4 | Web app — landing, deposit wizard, position dashboard + detail, keeper console, demo scripts | ✅ builds; on-chain flows need a fork + wallet |
+| — | Privy session-signer wiring for a live keeper (local-key "demo keeper" fallback works) | ⬜ |
 
 Working notes and findings: [`workdone.md`](./workdone.md).
 Build plan: [`plan.md`](./plan.md).
@@ -198,7 +232,8 @@ Requires **Node 20+** and [Foundry](https://book.getfoundry.sh/) (`anvil`,
 `cast`) for the fork tests.
 
 ```bash
-npm install
+npm install            # runs patch-package (see the note below)
+cp .env.example .env
 
 npm run dev            # Next.js app — http://localhost:3000
 
@@ -206,14 +241,22 @@ npm run phase2:test    # rule engine — pure unit test, no fork
 npm run phase1:fork    # deposit + strategy      ┐
 npm run phase1b:fork   # position + unwind       ├─ end-to-end on a fresh Base fork
 npm run phase3:fork    # keeper                  ┘
+npm run seed:fork      # demo: seed a live position + swap activity
+npm run depeg:fork     # demo: push the pool off peg to fire the rule
 ```
 
 The `*:fork` scripts spin up a disposable `anvil` fork of Base mainnet, run the
-test, and tear it down. Override the upstream RPC with `FORK_RPC=…`.
+script, and tear it down. Override the upstream RPC with `FORK_RPC=…`. The app's
+on-chain flows (deposit, position reads, keeper) need that fork running and a
+wallet on chain 8453 — point `RPC_URL` / `NEXT_PUBLIC_RPC_URL` at it in `.env`.
 
-> **Note:** the `@1inch/*` SDKs ship a broken ESM build. `next.config.ts` lists
-> them under `serverExternalPackages` so Next resolves them via CommonJS, and the
-> Aqua library is **server-only** — never import it into a Client Component.
+> **Note:** the `@1inch/*` SDKs ship a broken ESM build — `@1inch/byte-utils`
+> has no `exports` map, so `@1inch/byte-utils/dist/constants` (imported without a
+> file extension) doesn't resolve under Node ESM and every server action that
+> touches the Aqua lib fails to load. `patches/@1inch+byte-utils+3.1.8.patch`
+> (applied by `patch-package` on `postinstall`) adds the missing `exports` map.
+> The Aqua library is also **server-only** — never import it into a Client
+> Component.
 
 ---
 

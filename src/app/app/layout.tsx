@@ -16,22 +16,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <Providers>
       <ToastProvider>
       <div className="flex min-h-screen flex-col bg-black text-white">
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-black/70 px-6 py-3.5 backdrop-blur">
-          <div className="flex items-center gap-8">
+        <header className="sticky top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3.5">
             <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
               AQUALADDER
             </Link>
-            <nav className="hidden gap-6 md:flex">
+            <nav className="hidden items-center gap-8 md:flex">
               {NAV.map((n) => (
                 <NavLink key={n.href} {...n} />
               ))}
             </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden border border-white/15 px-2.5 py-1 text-xs text-neutral-400 sm:inline">
-              Base fork · 8453
-            </span>
-            <ConnectButton />
+            <div className="flex items-center gap-3">
+              <span className="hidden border border-white/15 px-2.5 py-1 text-xs text-neutral-400 sm:inline">
+                Base fork · 8453
+              </span>
+              <ConnectButton />
+            </div>
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">{children}</main>

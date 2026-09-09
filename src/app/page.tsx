@@ -7,7 +7,6 @@ const ACCENT = '#FD5299';
 
 const NAV = [
   { label: 'Liquidity', href: '#flow' },
-  { label: 'Architecture', href: '#architecture' },
 ];
 
 const CORNER: Record<string, string> = {
