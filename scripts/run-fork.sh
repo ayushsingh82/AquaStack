@@ -13,4 +13,4 @@ ANVIL=$!
 trap 'kill $ANVIL 2>/dev/null || true' EXIT
 until cast bn --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1; do sleep 1; done
 
-NODE_NO_WARNINGS=1 npx tsx "scripts/$SCRIPT.ts"
+NODE_NO_WARNINGS=1 npx tsx "scripts/$SCRIPT.ts" "${@:2}"

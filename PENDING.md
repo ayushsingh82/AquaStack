@@ -4,11 +4,13 @@ Backend (Phases 0–3) is **done and fork-tested**: `buildDeposit`, `buildPegged
 `readPosition`, `buildUnwind`, `evaluate`, `RuleStore`, keeper (`runKeeperOnce` /
 `tickPosition`). Landing page (`/`) is done.
 
-**1–23 are done** (16–20 committed; 21–23 not committed): the `/app` shell,
+**All 25 are done** (16–23 committed; 24–25 not committed): the `/app` shell,
 deposit wizard, positions dashboard + detail page (activity / rule editor /
-unwind), keeper console (run + verdict table + run history + signer status), and
-a toast system. `next build` + `tsc` clean. Still pending: 24–25 (demo fork
-scripts). Nothing below is verified against a live fork + wallet yet.
+unwind), keeper console (run + verdict table + run history + signer status),
+a toast system, and two demo fork scripts (`seed`, `depeg`). `next build` +
+`tsc` (app + scripts) clean. Nothing below is verified against a live fork +
+wallet yet — the fork scripts follow the proven phase1b/phase3 pattern but
+have not been run.
 
 ---
 
@@ -59,15 +61,18 @@ Server actions `getPositionsAction` / `getPositionAction` / `getKeeperVerdictsAc
 ## Polish — 23 ✅ DONE (not committed)
 23. ✅ **Loading / error / toast states** — `components/app/Toast.tsx` (`ToastProvider` in `/app/layout.tsx` + `useToast()`); success/error toasts wired into the rule editor, unwind flow and keeper run. Loading/empty/error states already on every list + panel.
 
-## Demo scripts — pending
-24. **Seed script for the demo** — deposit + a counterparty doing swaps, so the dashboard shows live numbers.
-25. **Depeg demo script** — push the pool off peg on the fork to show the rule fire.
+## Demo scripts — 24–25 ✅ DONE (not committed, not yet run on a fork)
+`scripts/demo-common.ts` (shared: `openPosition` writes to the app's `.data/positions.json`, `fundTaker`, `takerSwap`, `warpDays`). `run-fork.sh` now forwards extra args.
+
+24. ✅ **Seed script** — `scripts/seed.fork.ts` (`npm run seed:fork`): opens a 400-USDC position (balanced rule), funds a counterparty, runs 4 rounds of back-and-forth aUSDC↔aUSDbC swaps with +2d warps, prints the resulting swap count / fee PnL / Aave yield. Start the app on the same fork to see it live.
+25. ✅ **Depeg script** — `scripts/depeg.fork.ts` (`npm run depeg:fork`, `-- --run-keeper` to also fire the keeper headless): opens a tight-rule position (`pegDeviationBps 25`, autoUnwind), a whale dumps ~120 aUSDbC one-way, prints before/after peg deviation + the `unwind` verdict; presenter then hits "Run keeper now" to watch the `dock()`.
 
 ---
 
-## Minimum demo path
-**1–23 done · still need 24–25** → deposit a position, see it on the dashboard,
-run the keeper, watch it unwind, funds back in the wallet.
+## Minimum demo path — ✅ all pieces built
+**1–20** → deposit a position, see it on the dashboard, run the keeper, watch it
+unwind, funds back in the wallet. `seed:fork` (24) pre-populates live numbers;
+`depeg:fork` (25) triggers the rule on stage.
 
 ## Also open (from earlier findings)
 - **Swap vs Aave borrow-loop** for the second leg — USDbC DEX liquidity is thin (~$15k), so the swap-based deposit is demo-scale. Fine for the demo; a real product mints leg B via a borrow-loop.
