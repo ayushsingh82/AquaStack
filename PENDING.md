@@ -4,8 +4,10 @@ Backend (Phases 0–3) is **done and fork-tested**: `buildDeposit`, `buildPegged
 `readPosition`, `buildUnwind`, `evaluate`, `RuleStore`, keeper (`runKeeperOnce` /
 `tickPosition`). Landing page (`/`) is done.
 
-**Foundation (1–5) is done** — the `/app` shell, wallet, server boundary and store
-are wired. The deposit wizard, positions dashboard and keeper console are still pending.
+**1–18 are done** (not committed): the `/app` shell, deposit wizard, and the
+positions dashboard + detail page (activity / rule editor / unwind). `next build`
++ `tsc` clean. Still pending: 19–25 (keeper console, session-signer flow, polish,
+demo scripts). Nothing below is verified against a live fork + wallet yet.
 
 ---
 
@@ -29,9 +31,11 @@ state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
 
 > Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
-## Positions — 11–15 ✅ DONE (not committed) · 16–18 pending
+## Positions — 11–18 ✅ DONE (not committed)
 Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use `evaluateRecord`).
 `lib/format.ts` (client-safe `usd` / `bpsPct` / `shortHash` / `timeAgo`).
+`lib/rule-form.ts` (shared `RuleForm` / `fromRule` / `toRule` / `ruleSummary` / `describeReason` — extracted from the deposit wizard).
+`aqua/position.ts` gained an additive `PositionState.activity: PositionEvent[]` (ship / swap / dock logs, oldest-first) — `scripts/phase2.test.ts` factory updated to match.
 
 11. ✅ **`/app` list** — `components/app/positions/PositionsList.tsx`: rows with status pill, short hash, `$principal`, total-return bps (green/red), peg deviation, age. Row → `/app/position/[hash]`.
 12. ✅ **`/app` empty state** — "No positions yet" + "Open your first position" CTA; plus a "connect a wallet" state.
@@ -39,11 +43,9 @@ Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use 
 14. ✅ **yield panel** — Aave interest (both legs), Aqua PnL (signed), total return (% + bps) on principal.
 15. ✅ **peg gauge** — deviation bar with the rule's `pegDeviationBps` as a marker; quote a→b / b→a; swap count; shows the keeper verdict if the rule is tripped.
 
-> ← last completed: **task 15**. Detail-page routes compile; connect/loading/not-found states render. Full panels need a fork + wallet + a real position to verify visually.
-
-16. **`/app/position/[hash]` activity** — swaps count, pulled/pushed, keeper events.
-17. **`/app/position/[hash]` edit rule** — inline form → `saveRuleAction`.
-18. **`/app/position/[hash]` unwind now** — `prepareUnwindAction` → sign steps → `markUnwoundAction`.
+16. ✅ **`/app/position/[hash]` activity** — `components/app/position/ActivityFeed.tsx`: swaps count + pulled/pushed volume, then a per-event list (ship / swap-in / swap-out / dock) from `pos.activity` with block numbers + tx hashes, an "opened" row, and the keeper's unwind tx hashes when unwound.
+17. ✅ **`/app/position/[hash]` edit rule** — `components/app/position/RuleEditor.tsx`: collapsed rule summary → inline preset chips + 4 bps inputs + autoUnwind toggle → `saveRuleAction`, reloads on save.
+18. ✅ **`/app/position/[hash]` unwind now** — `components/app/position/UnwindNow.tsx`: confirm → `prepareUnwindAction` (optional Aave withdraw toggle) → sign each step (wagmi) → `markUnwoundAction`; handles `alreadyDocked` and the terminal `unwound` state.
 
 ## Keeper — pending
 19. **`/app/keeper` run** — "Run keeper now" button → `runKeeperOnce` → show `TickResult[]`.
@@ -59,9 +61,10 @@ Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use 
 ---
 
 ## Minimum demo path
-**1–12, 13–15, 18, 19–20, 24** → deposit a position, see it on the dashboard, run the keeper, watch it unwind, funds back in the wallet.
+**1–18 done · still need 19–20, 24** → deposit a position, see it on the dashboard,
+run the keeper, watch it unwind, funds back in the wallet.
 
-Everything else (16, 17, 21, 22, 23, 25) is polish.
+Everything else (21, 22, 23, 25) is polish.
 
 ## Also open (from earlier findings)
 - **Swap vs Aave borrow-loop** for the second leg — USDbC DEX liquidity is thin (~$15k), so the swap-based deposit is demo-scale. Fine for the demo; a real product mints leg B via a borrow-loop.

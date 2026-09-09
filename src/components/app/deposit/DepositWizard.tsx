@@ -5,7 +5,8 @@ import { formatUnits, parseUnits } from 'viem';
 import { useAccount, useReadContract } from 'wagmi';
 import { USDC, ACCENT } from '@/lib/addresses';
 import { ERC20_READ_ABI } from '@/lib/abis';
-import { RULE_PRESETS, type Rule, type RulePreset } from '@/lib/rules/types';
+import { RULE_PRESETS, type RulePreset } from '@/lib/rules/types';
+import { fromRule, toRule, type RuleForm, RULE_FIELDS } from '@/lib/rule-form';
 import { Button, Card, Label, Option } from '@/components/app/ui';
 import { DepositSign } from './DepositSign';
 
@@ -17,33 +18,6 @@ const PEG_BANDS: Record<PegPreset, { pct: number; hint: string }> = {
 type PegPreset = 'tight' | 'balanced' | 'wide';
 
 const STEPS = ['Amount', 'Strategy', 'Rule', 'Review & sign'];
-
-type RuleForm = {
-  pegDeviationBps: string;
-  takeProfitBps: string;
-  stopLossBps: string;
-  maxDrawdownBps: string;
-  autoUnwind: boolean;
-};
-
-const toStr = (v?: number) => (v == null ? '' : String(v));
-const fromRule = (r: Rule): RuleForm => ({
-  pegDeviationBps: toStr(r.pegDeviationBps),
-  takeProfitBps: toStr(r.takeProfitBps),
-  stopLossBps: toStr(r.stopLossBps),
-  maxDrawdownBps: toStr(r.maxDrawdownBps),
-  autoUnwind: r.autoUnwind,
-});
-const toRule = (f: RuleForm): Rule => {
-  const n = (s: string) => (s.trim() === '' ? undefined : Math.max(0, Math.round(Number(s))));
-  return {
-    pegDeviationBps: n(f.pegDeviationBps),
-    takeProfitBps: n(f.takeProfitBps),
-    stopLossBps: n(f.stopLossBps),
-    maxDrawdownBps: n(f.maxDrawdownBps),
-    autoUnwind: f.autoUnwind,
-  };
-};
 
 export function DepositWizard() {
   const { address, isConnected } = useAccount();
@@ -205,14 +179,7 @@ export function DepositWizard() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {(
-                [
-                  ['pegDeviationBps', 'Peg deviation (bps)'],
-                  ['takeProfitBps', 'Take profit (bps)'],
-                  ['stopLossBps', 'Stop loss (bps)'],
-                  ['maxDrawdownBps', 'Max drawdown (bps)'],
-                ] as const
-              ).map(([key, label]) => (
+              {RULE_FIELDS.map(([key, label]) => (
                 <div key={key}>
                   <Label>{label}</Label>
                   <input

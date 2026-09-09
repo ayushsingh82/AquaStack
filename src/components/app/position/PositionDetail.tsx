@@ -11,6 +11,9 @@ import type { EvalResult, PositionRecord } from '@/lib/rules/types';
 import { usd, bpsPct, shortHash, timeAgo } from '@/lib/format';
 import { aUSDC, ACCENT } from '@/lib/addresses';
 import { Card } from '@/components/app/ui';
+import { ActivityFeed } from './ActivityFeed';
+import { RuleEditor } from './RuleEditor';
+import { UnwindNow } from './UnwindNow';
 
 type Data =
   | { notFound: true }
@@ -124,9 +127,8 @@ export function PositionDetail({ hash }: { hash: Hex }) {
                 <span>quote b→a {pos.quote.bToA.toFixed(5)}</span>
                 <span>swaps {pos.swaps.count}</span>
               </div>
-              <div className="mt-4 border-t border-white/10 pt-3 text-sm">
-                <span className="text-neutral-500">Rule: </span>
-                <span className="text-neutral-200">{ruleSummary(record.rule)}</span>
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <RuleEditor record={record} onSaved={load} />
               </div>
               {result && result.action !== 'hold' && (
                 <p
@@ -145,10 +147,21 @@ export function PositionDetail({ hash }: { hash: Hex }) {
         </Card>
       </div>
 
-      {/* actions — tasks 16-18 land here */}
-      <p className="mt-8 text-xs text-neutral-600">
-        Activity feed (task 16), inline rule editing (task 17) and “unwind now” (task 18) come next.
-      </p>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        {/* ── Activity (task 16) ── */}
+        <Card>
+          <PanelTitle>Activity</PanelTitle>
+          <ActivityFeed pos={pos} record={record} />
+        </Card>
+
+        {/* ── Unwind now (task 18) ── */}
+        <Card>
+          <PanelTitle>Unwind</PanelTitle>
+          <div className="mt-4">
+            <UnwindNow record={record} onDone={load} />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -198,15 +211,6 @@ function PegGauge({ current, limit }: { current: number; limit?: number }) {
       )}
     </div>
   );
-}
-
-function ruleSummary(r: { pegDeviationBps?: number; takeProfitBps?: number; stopLossBps?: number; maxDrawdownBps?: number; autoUnwind: boolean }) {
-  const p: string[] = [];
-  if (r.pegDeviationBps != null) p.push(`depeg ${r.pegDeviationBps}bps`);
-  if (r.takeProfitBps != null) p.push(`TP +${r.takeProfitBps}bps`);
-  if (r.stopLossBps != null) p.push(`SL −${r.stopLossBps}bps`);
-  if (r.maxDrawdownBps != null) p.push(`DD ${r.maxDrawdownBps}bps`);
-  return `${p.join(' · ') || 'no thresholds'} — ${r.autoUnwind ? 'auto-unwind' : 'alert only'}`;
 }
 
 const PanelTitle = ({ children }: { children: React.ReactNode }) => (

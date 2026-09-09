@@ -41,6 +41,7 @@ function pos(over: Partial<PositionState> & { aaveYieldTotal?: bigint; aquaPnl?:
     quote: over.quote ?? { probeAmount: 10n ** 6n, aToB: 1, bToA: 1 },
     pegDeviationBps: over.pegDeviationBps ?? 0,
     swaps: over.swaps ?? { pulled: 0n, pushed: 0n, count: 0 },
+    activity: over.activity ?? [],
   };
 }
 

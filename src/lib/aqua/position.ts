@@ -41,6 +41,18 @@ export interface LegState {
   aaveYield: bigint;
 }
 
+/** one on-chain event against this strategy, oldest-first in PositionState.activity */
+export interface PositionEvent {
+  kind: 'ship' | 'swap-out' | 'swap-in' | 'dock';
+  blockNumber: bigint;
+  txHash: Hex;
+  logIndex: number;
+  /** token that moved (swap-out / swap-in only) */
+  token?: Address;
+  /** amount that moved, in that token's units (swap-out / swap-in only) */
+  amount?: bigint;
+}
+
 export interface PositionState {
   strategyHash: Hex;
   status: PositionStatus;
@@ -56,6 +68,8 @@ export interface PositionState {
   pegDeviationBps: number;
   /** cumulative token flow through swaps against this strategy (from events, excludes the ship deposit) */
   swaps: { pulled: bigint; pushed: bigint; count: number };
+  /** ship / swap / dock events against this strategy, oldest-first (excludes the ship's own leg pushes) */
+  activity: PositionEvent[];
 }
 
 export interface ReadPositionInput {
@@ -82,6 +96,7 @@ export interface ReadPositionInput {
 const PULLED_EVT = parseAbiItem('event Pulled(address maker, address app, bytes32 strategyHash, address token, uint256 amount)');
 const PUSHED_EVT = parseAbiItem('event Pushed(address maker, address app, bytes32 strategyHash, address token, uint256 amount)');
 const SHIPPED_EVT = parseAbiItem('event Shipped(address maker, address app, bytes32 strategyHash, bytes strategy)');
+const DOCKED_EVT = parseAbiItem('event Docked(address maker, address app, bytes32 strategyHash)');
 
 async function rawBalance(client: PublicClient, maker: Address, hash: Hex, token: Address): Promise<{ balance: bigint; tokensCount: number }> {
   const [balance, tokensCount] = (await client.readContract({
@@ -160,16 +175,28 @@ export async function readPosition(client: PublicClient, input: ReadPositionInpu
   const mine = (l: { args: { maker?: Address; strategyHash?: Hex } }) =>
     l.args.maker?.toLowerCase() === maker.toLowerCase() && l.args.strategyHash?.toLowerCase() === hash.toLowerCase();
 
-  const [pulled, pushed, shipped] = await Promise.all([
+  const [pulled, pushed, shipped, docked] = await Promise.all([
     client.getLogs({ address: AQUA, event: PULLED_EVT, fromBlock }),
     client.getLogs({ address: AQUA, event: PUSHED_EVT, fromBlock }),
     client.getLogs({ address: AQUA, event: SHIPPED_EVT, fromBlock }),
+    client.getLogs({ address: AQUA, event: DOCKED_EVT, fromBlock }),
   ]);
   const pulledMine = pulled.filter(mine);
   const pushedMine = pushed.filter(mine);
+  const shippedMine = shipped.filter(mine);
+  const dockedMine = docked.filter(mine);
   // ship() emits one Pushed per leg; drop those (2 per Shipped event for this strategy)
-  const shipPushes = shipped.filter(mine).length * 2;
+  const shipPushes = shippedMine.length * 2;
   const swapPushes = pushedMine.slice(Math.min(shipPushes, pushedMine.length));
+
+  const activity: PositionEvent[] = [
+    ...shippedMine.map((l) => ev('ship', l)),
+    ...pulledMine.map((l) => ev('swap-out', l, l.args.token, l.args.amount)),
+    ...swapPushes.map((l) => ev('swap-in', l, l.args.token, l.args.amount)),
+    ...dockedMine.map((l) => ev('dock', l)),
+  ].sort((a, b) =>
+    a.blockNumber === b.blockNumber ? a.logIndex - b.logIndex : Number(a.blockNumber - b.blockNumber),
+  );
 
   return {
     strategyHash: hash,
@@ -185,5 +212,22 @@ export async function readPosition(client: PublicClient, input: ReadPositionInpu
       pushed: swapPushes.reduce((s, l) => s + (l.args.amount ?? 0n), 0n),
       count: pulledMine.length,
     },
+    activity,
+  };
+}
+
+function ev(
+  kind: PositionEvent['kind'],
+  log: { blockNumber: bigint | null; transactionHash: Hex | null; logIndex: number | null },
+  token?: Address,
+  amount?: bigint,
+): PositionEvent {
+  return {
+    kind,
+    blockNumber: log.blockNumber ?? 0n,
+    txHash: log.transactionHash ?? ('0x' as Hex),
+    logIndex: log.logIndex ?? 0,
+    token,
+    amount,
   };
 }
