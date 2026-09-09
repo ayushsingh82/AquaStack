@@ -147,6 +147,26 @@ export async function markUnwoundAction(user: Address, strategyHash: Hex, txHash
   return toClient({ ok: true });
 }
 
+/** Task 20: keeper verdict table — dry-run evaluate every watched position (all users), no writes. */
+export async function getKeeperVerdictsAction() {
+  const [active, alerting] = await Promise.all([
+    ruleStore.list({ status: 'active' }),
+    ruleStore.list({ status: 'alerting' }),
+  ]);
+  const records = [...active, ...alerting].sort((a, b) => b.createdAt - a.createdAt);
+  const rows = await Promise.all(
+    records.map(async (record) => {
+      try {
+        const { pos, result } = await evaluateRecord(record);
+        return { record, pos, result, error: null as string | null };
+      } catch (e) {
+        return { record, pos: null, result: null, error: e instanceof Error ? e.message : String(e) };
+      }
+    }),
+  );
+  return toClient(rows);
+}
+
 /** Task 19: run the keeper once over all active positions. */
 export async function runKeeperAction() {
   const deps: KeeperDeps = {

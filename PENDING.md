@@ -4,10 +4,11 @@ Backend (Phases 0–3) is **done and fork-tested**: `buildDeposit`, `buildPegged
 `readPosition`, `buildUnwind`, `evaluate`, `RuleStore`, keeper (`runKeeperOnce` /
 `tickPosition`). Landing page (`/`) is done.
 
-**1–18 are done** (not committed): the `/app` shell, deposit wizard, and the
-positions dashboard + detail page (activity / rule editor / unwind). `next build`
-+ `tsc` clean. Still pending: 19–25 (keeper console, session-signer flow, polish,
-demo scripts). Nothing below is verified against a live fork + wallet yet.
+**1–20 are done** (not committed): the `/app` shell, deposit wizard, positions
+dashboard + detail page (activity / rule editor / unwind), and the keeper console
+(run + verdict table). `next build` + `tsc` clean. Still pending: 21–25 (keeper
+activity log, session-signer flow, polish, demo scripts). Nothing below is
+verified against a live fork + wallet yet.
 
 ---
 
@@ -32,7 +33,7 @@ state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
 > Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
 ## Positions — 11–18 ✅ DONE (not committed)
-Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use `evaluateRecord`).
+Server actions `getPositionsAction` / `getPositionAction` / `getKeeperVerdictsAction` (in `actions.ts`, use `evaluateRecord`).
 `lib/format.ts` (client-safe `usd` / `bpsPct` / `shortHash` / `timeAgo`).
 `lib/rule-form.ts` (shared `RuleForm` / `fromRule` / `toRule` / `ruleSummary` / `describeReason` — extracted from the deposit wizard).
 `aqua/position.ts` gained an additive `PositionState.activity: PositionEvent[]` (ship / swap / dock logs, oldest-first) — `scripts/phase2.test.ts` factory updated to match.
@@ -47,9 +48,11 @@ Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use 
 17. ✅ **`/app/position/[hash]` edit rule** — `components/app/position/RuleEditor.tsx`: collapsed rule summary → inline preset chips + 4 bps inputs + autoUnwind toggle → `saveRuleAction`, reloads on save.
 18. ✅ **`/app/position/[hash]` unwind now** — `components/app/position/UnwindNow.tsx`: confirm → `prepareUnwindAction` (optional Aave withdraw toggle) → sign each step (wagmi) → `markUnwoundAction`; handles `alreadyDocked` and the terminal `unwound` state.
 
-## Keeper — pending
-19. **`/app/keeper` run** — "Run keeper now" button → `runKeeperOnce` → show `TickResult[]`.
-20. **`/app/keeper` verdict table** — per active position: hold / alert / unwind + reason + metrics.
+## Keeper — 19–20 ✅ DONE (not committed) · 21–22 pending
+`/app/keeper` route → `components/app/keeper/KeeperConsole.tsx`.
+
+19. ✅ **`/app/keeper` run** — "Run keeper now" → `runKeeperAction` (`runKeeperOnce`) → "last run" card listing each `TickResult` (hash · action · detail · tx hashes).
+20. ✅ **`/app/keeper` verdict table** — `getKeeperVerdictsAction` dry-runs `evaluateRecord` over every active/alerting position (all users, no writes); table of position · status · return · peg dev · verdict (hold/alert/unwind) · reason.
 21. **`/app/keeper` activity log** — history of runs / unwinds / alerts.
 22. **Session signer** — Privy session signer authorize flow (or a local-key "demo keeper" fallback).
 
@@ -61,8 +64,8 @@ Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use 
 ---
 
 ## Minimum demo path
-**1–18 done · still need 19–20, 24** → deposit a position, see it on the dashboard,
-run the keeper, watch it unwind, funds back in the wallet.
+**1–20 done · still need 24** (seed script) → deposit a position, see it on the
+dashboard, run the keeper, watch it unwind, funds back in the wallet.
 
 Everything else (21, 22, 23, 25) is polish.
 
