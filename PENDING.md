@@ -16,12 +16,18 @@ are wired. The deposit wizard, positions dashboard and keeper console are still 
 4. ✅ **Wallet** — `src/components/app/Providers.tsx` (Privy + wagmi; **fallback**: no `NEXT_PUBLIC_PRIVY_APP_ID` → plain wagmi + injected wallet), `ConnectButton.tsx`. `.npmrc` `legacy-peer-deps=true`; `viem` pinned to `2.56.0`; `@stripe/stripe-js` added (Privy peer).
 5. ✅ **App shell** — `src/app/app/layout.tsx` (sticky header: wordmark · Positions/New deposit/Keeper nav · "Base fork · 8453" badge · Connect button), `NavLink.tsx`, `/app` Positions placeholder.
 
-## Deposit flow — pending
-6. **`/app/deposit` step 1: amount** — USDC input, balance read, validation.
-7. **`/app/deposit` step 2: strategy** — peg-band preset slider (tight / balanced / wide), shows band %.
-8. **`/app/deposit` step 3: rule** — preset picker + custom thresholds (pegDeviation / takeProfit / stopLoss / maxDrawdown) + autoUnwind toggle.
-9. **`/app/deposit` step 4: sign** — `buildDeposit`, walk the 9 steps as a progress checklist, read real aToken balances, `balancedShipStep`, sign the ship.
-10. **Persist + redirect** — write `PositionRecord` (rule, principals, indices, deposit block, strategyBytes), go to detail.
+## Deposit flow — ✅ DONE (not committed)
+`src/app/app/deposit/page.tsx` → `components/app/deposit/DepositWizard.tsx` (4-step
+state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
+`lib/addresses.ts`, `lib/abis.ts`, `components/app/ui.tsx`. `serialize.ts` moved to `lib/`.
+
+6. ✅ **step 1: amount** — USDC input, live balance via `useReadContract`, Max button, min-1 + ≤-balance validation.
+7. ✅ **step 2: strategy** — tight / balanced / wide peg-band picker (±0.1 / 0.5 / 2.0 %) → `pegBand`.
+8. ✅ **step 3: rule** — conservative / balanced / alertOnly presets + 4 editable bps threshold inputs + autoUnwind toggle → `Rule`.
+9. ✅ **step 4: sign** — `prepareDepositAction` → sign the 8 pre-ship steps (wagmi `sendTransaction` + wait), read real aToken balances + Aave indices + block, `buildShipStepAction` → sign the ship, progress checklist + chain-switch prompt.
+10. ✅ **persist + redirect** — `recordDepositAction` writes the `PositionRecord`, redirect to `/app`.
+
+> Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
 ## Positions — pending
 11. **`/app` list** — `RuleStore.list({ user })`, row per position: status pill, principal, total return, peg deviation, rule summary.
