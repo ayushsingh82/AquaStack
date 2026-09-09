@@ -22,7 +22,7 @@ export function Button({
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`border border-white/15 bg-black p-6 ${className}`}>{children}</div>;
+  return <div className={`bg-[#151515] p-6 ${className}`}>{children}</div>;
 }
 
 export function Label({ children }: { children: ReactNode }) {

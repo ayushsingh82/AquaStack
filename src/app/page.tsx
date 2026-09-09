@@ -5,10 +5,6 @@ import ClosingCTA from '@/components/ClosingCTA';
 
 const ACCENT = '#FD5299';
 
-const NAV = [
-  { label: 'Liquidity', href: '#flow' },
-];
-
 const CORNER: Record<string, string> = {
   tl: 'top-0 left-0 border-t-2 border-l-2',
   tr: 'top-0 right-0 border-t-2 border-r-2',
@@ -16,54 +12,27 @@ const CORNER: Record<string, string> = {
   br: 'bottom-0 right-0 border-b-2 border-r-2',
 };
 
-/* Stylised protocol marks (not official logos — drop real SVGs in /public/logos/ to swap). */
-function GlyphUSDC({ className = '' }: { className?: string }) {
+/* Official token logos (TrustWallet assets, served via the jsDelivr GitHub CDN).
+   To pin them, drop the files in /public/logos/ and point LOGO at those paths. */
+const LOGO = {
+  usdc: 'https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+  aave: 'https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png',
+  aqua: 'https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/ethereum/assets/0x111111111117dC0aa78b770fA6A738034120C302/logo.png',
+} as const;
+
+function Connector() {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M12 6.5v11M9.2 9.4c0-1.2 1.3-2 2.8-2s2.8.8 2.8 2-1.1 1.7-2.8 2.1c-1.7.4-2.8.9-2.8 2.1s1.3 2 2.8 2 2.8-.8 2.8-2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-function GlyphAave({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
-      <path
-        d="M4 20 11 5c.4-.9 1.6-.9 2 0l7 15"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M8.4 14.5h7.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="10.25" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-    </svg>
-  );
-}
-function GlyphAqua({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
-      <path
-        d="M12 3c3.6 4.2 6.5 7.6 6.5 11.1A6.5 6.5 0 0 1 12 20.6a6.5 6.5 0 0 1-6.5-6.5C5.5 10.6 8.4 7.2 12 3Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M9 14.2a3 3 0 0 0 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
+    <div className="flex justify-center py-2" aria-hidden>
+      <span className="h-6 w-px bg-white/15" />
+    </div>
   );
 }
 
-function ProtocolTag({ glyph, label }: { glyph: 'usdc' | 'aave' | 'aqua'; label: string }) {
-  const G = glyph === 'usdc' ? GlyphUSDC : glyph === 'aave' ? GlyphAave : GlyphAqua;
+function ProtocolTag({ glyph, label }: { glyph: keyof typeof LOGO; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 border border-white/15 px-2 py-1 text-[11px] text-neutral-300">
-      <G className="h-3.5 w-3.5" />
+    <span className="inline-flex items-center gap-2.5 bg-[#151515] px-4 py-2.5 text-sm text-neutral-100">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOGO[glyph]} alt="" width={24} height={24} className="h-6 w-6 rounded-full" />
       {label}
     </span>
   );
@@ -121,30 +90,50 @@ const FEATURES = [
   },
 ];
 
-const FLOW: { big: string; small: string; tag?: string }[] = [
-  { big: '1,000 USDC', small: 'you deposit — one signature', tag: 'deposit' },
+const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO)[] }[] = [
   {
-    big: '≈ 495 aUSDC + 495 aUSDbC',
-    small: 'half swapped, both legs supplied to Aave v3, shipped to 1inch Aqua',
-    tag: 'Aave + Aqua',
+    tag: 'deposit',
+    big: '1,000 USDC',
+    small: 'you deposit — one signature',
+    icons: ['usdc'],
   },
   {
+    tag: 'split + ship',
+    big: '≈ 495 aUSDC\n+ 495 aUSDbC',
+    small: 'half swapped, both legs supplied to Aave v3, then shipped to 1inch Aqua',
+    icons: ['aave', 'aqua'],
+  },
+  {
+    tag: 'rule fires',
     big: '+36 bps',
     small: 'total return after 40 days — Aave APY + Aqua spread trips the take-profit rule',
-    tag: 'rule fires',
+    icons: [],
   },
   {
+    tag: 'protected exit',
     big: '502.05 USDC',
     small: 'keeper docks the Aqua position and withdraws from Aave — principal + yield, back in your wallet',
-    tag: 'protected exit',
+    icons: ['usdc'],
   },
 ];
 
-const STACK = [
-  ['src/lib/aqua', 'buildDeposit · buildPeggedStrategy · readPosition · buildUnwind'],
-  ['src/lib/rules', 'evaluate(PositionState, Rule) → hold | alert | unwind · RuleStore'],
-  ['src/lib/keeper', 'runKeeperOnce · tickPosition · PositionSigner · Notifier'],
-  ['scripts', 'end-to-end fork tests against the live Aqua + Aave contracts'],
+const LAYERS = [
+  {
+    name: 'Interface',
+    desc: 'Deposit wizard, position dashboard, keeper console. Every chain read and tx-plan builder runs server-side; the wallet is Privy.',
+  },
+  {
+    name: 'Aqua integration',
+    desc: 'Builds the deposit plan, the pegged aUSDC/aUSDbC strategy, the live position read model, and the unwind plan.',
+  },
+  {
+    name: 'Protective rules',
+    desc: 'A pure evaluator — peg deviation, take-profit, stop-loss, max-drawdown → hold · alert · unwind — over a per-position rule store.',
+  },
+  {
+    name: 'Keeper',
+    desc: 'A cron pass over every active position: read state → evaluate the rule → act through a session signer while the user is offline.',
+  },
 ];
 
 export default function Home() {
@@ -156,17 +145,6 @@ export default function Home() {
           <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
             AQUALADDER
           </Link>
-          <div className="hidden items-center gap-8 md:flex">
-            {NAV.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-sm text-neutral-400 transition-colors hover:text-white"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
           <Link
             href="/app"
             className="border bg-black px-4 py-2 text-sm font-medium transition-colors hover:bg-white/5"
@@ -226,7 +204,7 @@ export default function Home() {
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <div key={f.n} className="relative border border-white/15 bg-black p-8">
+              <div key={f.n} className="relative bg-[#151515] p-8">
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute h-6 w-6 ${CORNER[f.corner]}`}
@@ -252,52 +230,62 @@ export default function Home() {
           <p className="mb-3 text-xs font-semibold tracking-[0.2em]" style={{ color: ACCENT }}>
             THE FLOW
           </p>
-          <h2 className="mb-6 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="mb-8 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
             From a fork test — deposit to protected exit.
           </h2>
-          <div className="mb-12 flex flex-wrap items-center gap-2">
+
+          {/* recipe strip */}
+          <div className="mb-14 flex flex-wrap items-center gap-x-3 gap-y-2 text-xl text-neutral-600">
             <ProtocolTag glyph="usdc" label="USDC" />
-            <span className="text-neutral-600">→</span>
+            <span aria-hidden>→</span>
             <ProtocolTag glyph="aave" label="Aave v3" />
-            <span className="text-neutral-600">+</span>
+            <span aria-hidden>+</span>
             <ProtocolTag glyph="aqua" label="1inch Aqua" />
-            <span className="text-neutral-600">→</span>
+            <span aria-hidden>→</span>
             <ProtocolTag glyph="usdc" label="USDC + yield" />
           </div>
 
-          <ol className="grid gap-4 lg:grid-cols-4">
+          <ol className="grid gap-5 lg:grid-cols-4">
             {FLOW.map((step, i) => (
-              <li key={i} className="relative border border-white/15 bg-black p-5">
+              <li key={i} className="relative flex flex-col bg-[#151515] p-6">
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2"
+                  className="pointer-events-none absolute left-0 top-0 h-7 w-7 border-l-2 border-t-2"
+                  style={{ borderColor: ACCENT }}
+                />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute bottom-0 right-0 h-7 w-7 border-b-2 border-r-2"
                   style={{ borderColor: ACCENT }}
                 />
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs" style={{ color: ACCENT }}>
+                  <span className="font-mono text-sm font-medium" style={{ color: ACCENT }}>
                     0{i + 1}
                   </span>
-                  {step.tag && (
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-600">
-                      {step.tag}
-                    </span>
+                  <span className="text-[10px] uppercase tracking-[0.15em] text-neutral-500">
+                    {step.tag}
+                  </span>
+                </div>
+
+                <div className="mt-5 flex h-6 items-center gap-1.5">
+                  {step.icons.length > 0 ? (
+                    step.icons.map((ic) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={ic} src={LOGO[ic]} alt="" width={22} height={22} className="h-[22px] w-[22px] rounded-full" />
+                    ))
+                  ) : (
+                    <span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} />
                   )}
                 </div>
-                <p className="mt-3 font-mono text-base font-medium leading-snug text-white">
+
+                <p className="mt-3 whitespace-pre-line font-mono text-lg font-medium leading-tight text-white">
                   {step.big}
                 </p>
-                <p className="mt-2 text-xs leading-5 text-neutral-400">{step.small}</p>
-                {i < FLOW.length - 1 && (
-                  <span
-                    aria-hidden
-                    className="absolute -right-3 top-1/2 hidden -translate-y-1/2 text-neutral-600 lg:block"
-                  >
-                    →
-                  </span>
-                )}
+                <p className="mt-3 text-xs leading-5 text-neutral-400">{step.small}</p>
               </li>
             ))}
           </ol>
+
           <p className="mt-6 text-xs text-neutral-600">
             Numbers from <span className="font-mono text-neutral-400">npm run phase3:fork</span> —
             executed against the live Aqua + Aave v3 contracts on a Base mainnet fork.
@@ -315,63 +303,52 @@ export default function Home() {
             Four layers. All fork-tested against live contracts.
           </h2>
 
-          {/* layered stack */}
-          <div className="space-y-3">
-            <div className="border border-white/15 bg-black px-5 py-4">
-              <p className="font-mono text-sm font-medium" style={{ color: ACCENT }}>
-                src/app · src/components/app
-              </p>
-              <p className="mt-1 text-sm text-neutral-400">
-                Next.js App Router — deposit wizard, position dashboard, keeper console. All chain
-                access via <span className="font-mono text-neutral-300">&apos;use server&apos;</span> actions;
-                wallet through Privy.
-              </p>
-            </div>
-
-            <div className="flex justify-center text-neutral-700" aria-hidden>
-              ▼
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {STACK.slice(0, 3).map(([name, desc]) => (
-                <div key={name} className="border border-white/15 bg-black p-4">
-                  <p className="font-mono text-sm font-medium" style={{ color: ACCENT }}>
-                    {name}
-                  </p>
-                  <p className="mt-1.5 text-xs leading-5 text-neutral-400">{desc}</p>
+          {/* the four layers */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {LAYERS.map((l, i) => (
+              <div key={l.name} className="relative bg-[#151515] p-6">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2"
+                  style={{ borderColor: ACCENT }}
+                />
+                <div className="flex items-baseline gap-3">
+                  <span className="font-mono text-xs" style={{ color: ACCENT }}>
+                    0{i + 1}
+                  </span>
+                  <h3 className="text-base font-medium text-white">{l.name}</h3>
                 </div>
-              ))}
-            </div>
-
-            <div className="flex justify-center text-neutral-700" aria-hidden>
-              ▼
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-white/15 bg-black px-5 py-4">
-              <p className="text-sm text-neutral-400">
-                Base mainnet — real deployed contracts, no testnet
-              </p>
-              <div className="flex gap-2">
-                <ProtocolTag glyph="aqua" label="1inch Aqua + SwapVM" />
-                <ProtocolTag glyph="aave" label="Aave v3" />
+                <p className="mt-3 text-sm leading-6 text-neutral-400">{l.desc}</p>
               </div>
+            ))}
+          </div>
+
+          <Connector />
+
+          {/* foundation */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-[#151515] p-6">
+            <div>
+              <p className="text-base font-medium text-white">Base mainnet</p>
+              <p className="mt-1 text-xs text-neutral-500">real deployed contracts — no testnet</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ProtocolTag glyph="aqua" label="1inch Aqua + SwapVM" />
+              <ProtocolTag glyph="aave" label="Aave v3" />
             </div>
           </div>
 
           <div className="mt-10">
             <p className="mb-3 text-xs tracking-[0.15em] text-neutral-500">DEPLOYED ON BASE · CHAIN 8453</p>
-            <div className="flex flex-wrap gap-2 text-xs">
+            <div className="divide-y divide-white/10 border-y border-white/10 font-mono text-xs">
               {[
                 ['Aqua', '0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a'],
                 ['AquaSwapVMRouter', '0x111111338c5091E8440b67B168bAe16a668AC0De'],
                 ['Aave v3 Pool', '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'],
               ].map(([label, addr]) => (
-                <span
-                  key={label}
-                  className="max-w-full truncate border border-white/15 px-3 py-1.5 font-mono text-neutral-300"
-                >
-                  <span className="text-neutral-500">{label}</span> {addr}
-                </span>
+                <div key={label} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:gap-4">
+                  <span className="min-w-[10rem] text-neutral-500">{label}</span>
+                  <span className="break-all text-neutral-300">{addr}</span>
+                </div>
               ))}
             </div>
           </div>
