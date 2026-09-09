@@ -102,6 +102,18 @@ export async function getPositionsAction(user: Address) {
   return toClient(rows);
 }
 
+/** Task 13-15: one position with its live state + rule verdict. */
+export async function getPositionAction(user: Address, strategyHash: Hex) {
+  const record = await ruleStore.get(user, strategyHash);
+  if (!record) return toClient({ notFound: true as const });
+  try {
+    const { pos, result } = await evaluateRecord(record);
+    return toClient({ record, pos, result });
+  } catch (e) {
+    return toClient({ record, pos: null, result: null, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 /** Task 17: update the rule on a position. */
 export async function saveRuleAction(user: Address, strategyHash: Hex, rule: Rule) {
   await ruleStore.update(user, strategyHash, { rule, status: 'active' });

@@ -29,18 +29,21 @@ state machine) + `DepositSign.tsx` (tx orchestration). Client-safe helpers:
 
 > Untested end-to-end — needs a running Base fork + a wallet on chain 8453. Typecheck clean, step 1 renders.
 
-## Positions — 11–12 ✅ DONE (not committed) · 13–18 pending
-Server action `getPositionsAction` (in `actions.ts`, uses `evaluateRecord`).
+## Positions — 11–15 ✅ DONE (not committed) · 16–18 pending
+Server actions `getPositionsAction` / `getPositionAction` (in `actions.ts`, use `evaluateRecord`).
 `lib/format.ts` (client-safe `usd` / `bpsPct` / `shortHash` / `timeAgo`).
 
 11. ✅ **`/app` list** — `components/app/positions/PositionsList.tsx`: rows with status pill, short hash, `$principal`, total-return bps (green/red), peg deviation, age. Row → `/app/position/[hash]`.
 12. ✅ **`/app` empty state** — "No positions yet" + "Open your first position" CTA; plus a "connect a wallet" state.
-13. **`/app/position/[hash]` balances panel** — per-leg virtual vs wallet aToken, principal, shipped amount.
-14. **`/app/position/[hash]` yield panel** — Aave yield, Aqua PnL, total return bps.
-15. **`/app/position/[hash]` peg gauge** — current quote / deviation, rule thresholds marked.
+13. ✅ **`/app/position/[hash]` balances panel** — `components/app/position/PositionDetail.tsx`: per-leg aUSDC/aUSDbC — wallet aToken vs Aqua virtual balance vs shipped, and the accrued gap.
+14. ✅ **yield panel** — Aave interest (both legs), Aqua PnL (signed), total return (% + bps) on principal.
+15. ✅ **peg gauge** — deviation bar with the rule's `pegDeviationBps` as a marker; quote a→b / b→a; swap count; shows the keeper verdict if the rule is tripped.
+
+> ← last completed: **task 15**. Detail-page routes compile; connect/loading/not-found states render. Full panels need a fork + wallet + a real position to verify visually.
+
 16. **`/app/position/[hash]` activity** — swaps count, pulled/pushed, keeper events.
-17. **`/app/position/[hash]` edit rule** — inline form → update `PositionRecord`.
-18. **`/app/position/[hash]` unwind now** — `buildUnwind` → sign steps → mark unwound.
+17. **`/app/position/[hash]` edit rule** — inline form → `saveRuleAction`.
+18. **`/app/position/[hash]` unwind now** — `prepareUnwindAction` → sign steps → `markUnwoundAction`.
 
 ## Keeper — pending
 19. **`/app/keeper` run** — "Run keeper now" button → `runKeeperOnce` → show `TickResult[]`.
