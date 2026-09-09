@@ -1,0 +1,16 @@
+diff --git a/node_modules/@1inch/byte-utils/package.json b/node_modules/@1inch/byte-utils/package.json
+index 0000000..1111111 100644
+--- a/node_modules/@1inch/byte-utils/package.json
++++ b/node_modules/@1inch/byte-utils/package.json
+@@ -7,6 +7,11 @@
+   "private": false,
+   "main": "dist/index.js",
+   "types": "dist/index.d.ts",
++  "exports": {
++    ".": "./dist/index.js",
++    "./dist/constants": "./dist/constants.js",
++    "./package.json": "./package.json"
++  },
+   "files": [
+     "dist",
+     "LICENSE",

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "patch-package",
     "phase1:fork": "./scripts/run-fork.sh phase1.fork",
     "phase1b:fork": "./scripts/run-fork.sh phase1b.fork",
     "phase2:test": "tsx scripts/phase2.test.ts",
@@ -37,6 +38,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "patch-package": "^8.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5"
