@@ -1,0 +1,9 @@
+{
+  "chainId": 84532,
+  "rpc": "https://sepolia.base.org",
+  "deployedAtBlock": "46646450",
+  "deployedAt": "2026-09-10T17:26:29.696Z",
+  "aqua": "0x0771a4ca37e61993540ed939157635aa7d0f9584",
+  "aquaSwapVMRouter": "0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1",
+  "weth": "0x4200000000000000000000000000000000000006"
+}

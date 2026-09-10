@@ -111,13 +111,15 @@ priced in. The tagline is "auto-exits on depeg," not "protects before a loss."
 
 Aqua + SwapVM have no testnet deployment, so we redeploy them from the 1inch
 repos (`1inch/swap-vm@v1.0.2` — its opcode set is byte-identical to the installed
-`@1inch/swap-vm-sdk@0.4.1`) onto **Base Sepolia**, alongside real Aave v3. Every
-layer is then exercised end-to-end on an anvil fork of Base Sepolia:
+`@1inch/swap-vm-sdk@0.4.1`) onto **Base Sepolia**, alongside real Aave v3. The
+stack is live on real Base Sepolia (addresses above) and every layer is exercised
+end-to-end there and on an anvil fork:
 
 | Test | Proves |
 | --- | --- |
 | `npm run deploy:testnet` | `AquaRouter` + `AquaSwapVMRouter` deploy from vendored artifacts; `order.encode() → ship → quote → swap → dock` round-trips |
-| `npm run e2e:testnet` | full flow: deposit (USDC + USDT → Aave → ship) → `readPosition()` → taker swaps → +30d **real Aave yield** → `evaluate()` → `buildUnwind()` (dock + repay-debt + withdraw) → funds back |
+| `npm run e2e:live` | **on real Base Sepolia:** deposit (USDC + USDT → Aave → ship) → `readPosition()` → 2 taker swaps against the pegged pool → `evaluate()` (verdict `hold`) → `buildUnwind()` (dock + withdraw) → **maker whole, 4,000.0019 back** → `docked` |
+| `npm run e2e:testnet` | same flow on an anvil fork with +30d time-warp → **real Aave yield +6.68 USDT** on top of the Aqua spread |
 | `npm run seed:testnet` | opens a position + a counterparty running swaps + time warps → non-zero swap count, fee PnL and Aave yield on the dashboard |
 | `npm run depeg:testnet -- --run-keeper` | whale swaps push the peg past the rule → keeper **auto-unwinds** via the session signer |
 | `npm run phase2:test` | rule engine: all four thresholds, max-drawdown peak memory, docked → hold; both store implementations round-trip (bigint-safe) |
@@ -196,11 +198,20 @@ delegated per-position and scoped to `dock()` + Aave `withdraw()` only (a local
 
 ### Contracts — Base Sepolia (chain 84532)
 
+Live and verified end-to-end on real Base Sepolia (`npm run e2e:live`).
+
 | Contract | Address |
 | --- | --- |
-| Aave v3 Pool | `0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27` |
-| aUSDC / aUSDT | `0x10F1…50ACC` / `0xcE3C…0c018` |
-| Aqua registry / AquaSwapVMRouter | deployed by `scripts/deploy-testnet.ts` → `deployments/84532.json` |
+| Aqua registry (`AquaRouter`) | [`0x0771a4ca37e61993540ed939157635aa7d0f9584`](https://sepolia.basescan.org/address/0x0771a4ca37e61993540ed939157635aa7d0f9584) |
+| `AquaSwapVMRouter` | [`0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1`](https://sepolia.basescan.org/address/0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1) |
+| Aave v3 Pool | [`0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27`](https://sepolia.basescan.org/address/0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27) |
+| USDC / aUSDC | `0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f` / `0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC` |
+| USDT / aUSDT | `0x0a215D8ba66387DCA84B284D18c3B4ec3de6E54a` / `0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018` |
+| Aave faucet (open `mint`) | `0xD9145b5F45Ad4519c7ACcD6E0A4A82e83bB8A6Dc` |
+
+Deployer `0x236d7352170BDf28866A889D970A35A2FB267082`; full record in
+[`deployments/84532.json`](./deployments/84532.json). Redeploy with
+`scripts/deploy-testnet.ts` (for a local fork, or a fresh testnet).
 
 ---
 
@@ -229,7 +240,7 @@ delegated per-position and scoped to `dock()` + Aave `withdraw()` only (a local
 | 2 | Rule engine + store — `evaluate` · `RuleStore` | ✅ unit-tested |
 | 3 | Keeper — `run` · `tick` · signer · notifier | ✅ Sepolia e2e (auto-unwind) |
 | 4 | Web app — landing, deposit wizard, dashboard, keeper console, demo scripts | ✅ builds; deposit/keeper flows run on a Sepolia fork |
-| 5 | Base Sepolia — redeploy Aqua/SwapVM, 2-token deposit, Privy session signer | ✅ on a fork; awaiting testnet ETH for the live deploy + Vercel |
+| 5 | Base Sepolia — redeploy Aqua/SwapVM, 2-token deposit, Privy session signer | ✅ live on real Base Sepolia (`npm run e2e:live`); Privy session signer + Vercel in progress |
 
 Working notes and findings: [`workdone.md`](./workdone.md).
 Build plan: [`plan.md`](./plan.md).
@@ -247,7 +258,9 @@ cp .env.example .env
 
 npm run phase2:test    # rule engine — pure unit test, no chain
 
-npm run e2e:testnet    # full deposit → yield → unwind, on a Base Sepolia fork
+npm run e2e:live       # full deposit → swaps → unwind, on REAL Base Sepolia
+                       #   (PK=0x… a funded deployer, or defaults to .deploy-key.json)
+npm run e2e:testnet    # same flow + 30d time-warp for Aave yield, on an anvil fork
 npm run seed:testnet   # demo: seed a live position + swap activity
 npm run depeg:testnet -- --run-keeper   # demo: depeg → keeper auto-unwinds
 ```
@@ -257,14 +270,16 @@ deploy the Aqua stack, run the script, and tear it down. Override the upstream
 RPC with `FORK_RPC=…`.
 
 **Running the app on a fork:** in one terminal
-`anvil --fork-url https://base-sepolia-rpc.publicnode.com --chain-id 84532`,
+`anvil --fork-url https://sepolia.base.org --chain-id 84532`,
 then `npm run deploy:testnet` (writes `deployments/84532.json` + prints the
 `NEXT_PUBLIC_AQUA*` values for `.env`), then `npm run dev`. Connect a wallet on
 chain 84532; the deposit wizard has a "Get test tokens" button.
 
-**Real Base Sepolia:** point `RPC_URL` / `NEXT_PUBLIC_RPC_URL` at a Base Sepolia
-RPC, `PK=0x…` a funded deployer, `npm run deploy:testnet`, paste the two
-addresses into `.env`, commit `deployments/84532.json`.
+**Real Base Sepolia:** already deployed (addresses in [`deployments/84532.json`](./deployments/84532.json),
+baked into `.env.example`). To redeploy a fresh set: `RPC=https://sepolia.base.org
+PK=0x…` a funded deployer, `npm run deploy:testnet`, then paste the two printed
+addresses into `.env` / your host's env. Test tokens: the Aave faucet's open
+`mint(token,to,amount)` (see `scripts/e2e.testnet.ts`).
 
 > **Note:** the `@1inch/*` SDKs ship a broken ESM build — `@1inch/byte-utils`
 > has no `exports` map, so `@1inch/byte-utils/dist/constants` (imported without a

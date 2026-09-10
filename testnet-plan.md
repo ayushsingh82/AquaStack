@@ -1,5 +1,31 @@
 # AquaLadder on Base Sepolia — deploy + demo plan
 
+---
+
+## ✅ LIVE ON REAL BASE SEPOLIA (chain 84532) — 2026-09-10
+
+| Contract | Address |
+| --- | --- |
+| Aqua registry (`AquaRouter`) | `0x0771a4ca37e61993540ed939157635aa7d0f9584` |
+| `AquaSwapVMRouter` | `0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1` |
+| WETH (OP-stack predeploy) | `0x4200000000000000000000000000000000000006` |
+
+Deployed by `scripts/deploy-testnet.ts` (`deployments/84532.json`), deployer
+`0x236d7352170BDf28866A889D970A35A2FB267082`, from the opcode-matched
+`1inch/swap-vm@v1.0.2` + `1inch/aqua@main` vendored artifacts.
+
+**Full e2e verified on live chain** (`scripts/e2e.testnet.ts`, `npm run e2e:live`):
+deposit 1,500 USDC + 1,500 USDT → real Aave v3 supply → `ship` → 2 taker swaps
+against the pegged pool → `readPosition` (2 swaps, +0.0007 Aqua PnL, peg 1 bps,
+rule verdict `hold`) → `buildUnwind` (dock + 2 Aave withdraws) → **maker whole:
+4,000.0019 back** → position `docked`. Test tokens from the Aave Base Sepolia
+faucet `0xD9145b5F45Ad4519c7ACcD6E0A4A82e83bB8A6Dc` (unpermissioned `mint`).
+
+Phases B + C (contracts + app wiring) are **done**. Remaining: Phase D (seed the
+demo dashboard), Phase E (Privy session signer + Vercel), Phase F (polish).
+
+---
+
 **Decision:** demo on a real public testnet (Base Sepolia, chain **84532**), not a
 fork. That means deploying Aqua + the SwapVM router ourselves — the 1inch bounty
 allows redeploys ("redeployments of a modified SwapVM contract is allowed").

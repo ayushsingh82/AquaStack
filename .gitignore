@@ -48,5 +48,9 @@ next-env.d.ts
 # testnet spike working area (cloned 1inch contract repos)
 /.sepolia-spike/
 
-# deploy records — local-fork artifacts; the real Base Sepolia one is committed by hand
-/deployments/
+# deploy records — ignore local-fork artifacts, keep the real Base Sepolia one
+/deployments/*
+!/deployments/84532.json
+
+# generated deployer key — never commit
+.deploy-key.json

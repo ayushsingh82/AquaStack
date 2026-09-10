@@ -4,7 +4,7 @@
 #   ./scripts/run-testnet.sh depeg.fork -- --run-keeper
 set -euo pipefail
 SCRIPT="${1:?usage: run-testnet.sh <script-basename> [-- args]}"
-UP_RPC="${FORK_RPC:-https://base-sepolia-rpc.publicnode.com}"
+UP_RPC="${FORK_RPC:-https://sepolia.base.org}"
 
 pkill -f 'anvil --fork' 2>/dev/null || true
 sleep 1

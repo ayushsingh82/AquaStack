@@ -11,6 +11,7 @@
     "phase2:test": "tsx scripts/phase2.test.ts",
     "deploy:testnet": "tsx scripts/deploy-testnet.ts",
     "e2e:testnet": "./scripts/run-testnet.sh e2e.sepolia",
+    "e2e:live": "tsx scripts/e2e.testnet.ts",
     "seed:testnet": "./scripts/run-testnet.sh seed.fork",
     "depeg:testnet": "./scripts/run-testnet.sh depeg.fork"
   },
@@ -23,6 +24,7 @@
     "@privy-io/wagmi": "^4.0.17",
     "@stripe/stripe-js": "^9.15.0",
     "@tanstack/react-query": "^5.102.8",
+    "@upstash/redis": "^1.38.4",
     "next": "16.3.4",
     "ogl": "^1.0.11",
     "react": "19.2.8",

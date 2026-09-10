@@ -347,7 +347,8 @@ export default function Home() {
                 ['Aave v3 Pool', '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27'],
                 ['aUSDC', '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC'],
                 ['aUSDT', '0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018'],
-                ['Aqua / AquaSwapVMRouter', 'see deployments/84532.json'],
+                ['Aqua registry', '0x0771a4ca37e61993540ed939157635aa7d0f9584'],
+                ['AquaSwapVMRouter', '0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1'],
               ].map(([label, addr]) => (
                 <div key={label} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:gap-4">
                   <span className="min-w-[10rem] text-neutral-500">{label}</span>
