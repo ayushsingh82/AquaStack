@@ -13,6 +13,7 @@
  *   ./scripts/run-fork.sh depeg.fork
  *   ./scripts/run-fork.sh depeg.fork -- --run-keeper
  */
+import './_env'; // MUST be first — sets NEXT_PUBLIC_CHAIN_ID before constants.ts loads
 import { readPosition } from '../src/lib/aqua/position';
 import { evaluate } from '../src/lib/rules';
 import { runKeeperOnce, LocalKeySigner, consoleNotifier } from '../src/lib/keeper';
@@ -21,7 +22,8 @@ import { pub, accounts, u6, log, RPC } from './forkutil';
 import { openPosition, fundTaker, takerSwap, store, LEG_A, LEG_B } from './demo-common';
 
 const TIGHT_RULE = { pegDeviationBps: 25, stopLossBps: 500, autoUnwind: true };
-const WHALE_SWAP = 120n * 10n ** 6n; // large vs a ~180/leg demo pool → clear depeg
+const POOL = 200n * 10n ** 6n; // small pool so a whale can visibly move the peg
+const WHALE_STEP = 60n * 10n ** 6n; // per one-directional whale swap
 
 async function main() {
   const runKeeper = process.argv.includes('--run-keeper');
@@ -30,7 +32,7 @@ async function main() {
 
   const { record, order } = await openPosition({
     walletIdx: 0,
-    usdc: 360n * 10n ** 6n,
+    usdc: POOL,
     pegBand: 'tight',
     rule: TIGHT_RULE,
   });
@@ -51,11 +53,15 @@ async function main() {
   let pos = await readPosition(pub, readInput);
   log.info(`before: peg deviation ${pos.pegDeviationBps}bps (rule limit ${TIGHT_RULE.pegDeviationBps}bps)`);
 
-  log.h('whale dumps aUSDbC into the pool');
-  await fundTaker(1, USDbC, 200n * 10n ** 6n);
-  await takerSwap(1, order, aUSDbC, aUSDC, WHALE_SWAP);
+  log.h('whale dumps aUSDbC into the pool (one-directional, until the rule trips)');
+  await fundTaker(1, USDbC, 600n * 10n ** 6n);
+  for (let i = 1; i <= 8; i++) {
+    await takerSwap(1, order, aUSDbC, aUSDC, WHALE_STEP);
+    pos = await readPosition(pub, readInput);
+    log.info(`  swap ${i}: peg deviation ${pos.pegDeviationBps}bps`);
+    if (pos.pegDeviationBps >= TIGHT_RULE.pegDeviationBps) break;
+  }
 
-  pos = await readPosition(pub, readInput);
   const verdict = evaluate(pos, record.rule);
   log.h('=== after the swap ===');
   log.info(`peg deviation ${pos.pegDeviationBps}bps · quote a→b ${pos.quote.aToB.toFixed(5)} · b→a ${pos.quote.bToA.toFixed(5)}`);

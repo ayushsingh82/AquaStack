@@ -8,12 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "patch-package",
-    "phase1:fork": "./scripts/run-fork.sh phase1.fork",
-    "phase1b:fork": "./scripts/run-fork.sh phase1b.fork",
     "phase2:test": "tsx scripts/phase2.test.ts",
-    "phase3:fork": "./scripts/run-fork.sh phase3.fork",
-    "seed:fork": "./scripts/run-fork.sh seed.fork",
-    "depeg:fork": "./scripts/run-fork.sh depeg.fork"
+    "deploy:testnet": "tsx scripts/deploy-testnet.ts",
+    "e2e:testnet": "./scripts/run-testnet.sh e2e.sepolia",
+    "seed:testnet": "./scripts/run-testnet.sh seed.fork",
+    "depeg:testnet": "./scripts/run-testnet.sh depeg.fork"
   },
   "dependencies": {
     "@1inch/aqua-sdk": "^0.3.1",

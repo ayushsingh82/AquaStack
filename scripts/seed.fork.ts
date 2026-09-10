@@ -10,6 +10,7 @@
  *
  * Then start the app against the same fork (`npm run dev`) and open /app.
  */
+import './_env'; // MUST be first — sets NEXT_PUBLIC_CHAIN_ID before constants.ts loads
 import { readPosition } from '../src/lib/aqua/position';
 import { RULE_PRESETS } from '../src/lib/rules';
 import { USDC, USDbC, aUSDC, aUSDbC } from '../src/lib/aqua/constants';
@@ -17,7 +18,7 @@ import { pub, u6, log } from './forkutil';
 import { openPosition, fundTaker, takerSwap, warpDays, store } from './demo-common';
 
 const ROUNDS = 4;
-const SWAP = 2n * 10n ** 6n; // 2 aTokens per leg of a round
+const SWAP = 5n * 10n ** 6n; // aTokens per leg of a round
 
 async function main() {
   log.h('=== AquaLadder demo seed ===');
@@ -26,21 +27,21 @@ async function main() {
   // 1. open a position with a balanced rule (won't auto-unwind on small wobble)
   const { record, order } = await openPosition({
     walletIdx: 0,
-    usdc: 400n * 10n ** 6n,
+    usdc: 2_000n * 10n ** 6n,
     pegBand: 'wide',
     rule: { ...RULE_PRESETS.balanced },
   });
 
-  // 2. fund the counterparty on both legs
+  // 2. fund the counterparty
   log.h('funding counterparty (wallet 1)');
-  await fundTaker(1, USDbC, 40n * 10n ** 6n);
-  await fundTaker(1, USDC, 40n * 10n ** 6n);
+  await fundTaker(1, USDbC, 100n * 10n ** 6n);
+  await fundTaker(1, USDC, 100n * 10n ** 6n);
 
-  // 3. back-and-forth swaps + time warps
+  // 3. swaps + time warps (alternate direction each round via a small net drift)
   for (let r = 1; r <= ROUNDS; r++) {
     log.h(`round ${r}/${ROUNDS}`);
-    await takerSwap(1, order, aUSDbC, aUSDC, SWAP);
-    await takerSwap(1, order, aUSDC, aUSDbC, SWAP);
+    if (r % 2 === 1) await takerSwap(1, order, aUSDbC, aUSDC, SWAP);
+    else await takerSwap(1, order, aUSDC, aUSDbC, SWAP);
     await warpDays(2);
   }
 
