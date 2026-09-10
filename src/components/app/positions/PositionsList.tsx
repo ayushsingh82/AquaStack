@@ -61,17 +61,17 @@ export function PositionsList() {
       </div>
 
       {!isConnected && (
-        <div className="mt-10 bg-[#151515] p-12 text-center text-sm text-neutral-400">
+        <div className="mt-10 border border-white/15 bg-[#151515] p-12 text-center text-sm text-neutral-400">
           Connect a wallet to see your positions.
         </div>
       )}
 
       {isConnected && loading && !rows && (
-        <div className="mt-10 bg-[#151515] p-12 text-center text-sm text-neutral-500">Loading…</div>
+        <div className="mt-10 border border-white/15 bg-[#151515] p-12 text-center text-sm text-neutral-500">Loading…</div>
       )}
 
       {isConnected && rows && rows.length === 0 && (
-        <div className="mt-10 bg-[#151515] p-12 text-center">
+        <div className="mt-10 border border-white/15 bg-[#151515] p-12 text-center">
           <p className="text-sm text-neutral-400">No positions yet.</p>
           <Link
             href="/app/deposit"

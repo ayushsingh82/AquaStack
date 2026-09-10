@@ -1,41 +1,85 @@
 'use client';
 
+import { useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { usePrivy } from '@privy-io/react-auth';
 import { PRIVY_ENABLED } from './Providers';
 
-const ACCENT = '#FD5299';
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
-function Pill({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function WalletIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+      <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 10h18" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16.5" cy="14" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ConnectBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
       onClick={onClick}
-      className="border bg-black px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/5"
-      style={{ borderColor: ACCENT, color: ACCENT }}
+      className="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-neutral-200"
     >
-      {children}
+      <WalletIcon />
+      {label}
     </button>
+  );
+}
+
+function Connected({ address, onDisconnect }: { address: string; onDisconnect: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={copy}
+        title="Copy address"
+        className="inline-flex items-center gap-2 bg-white px-3.5 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+      >
+        <WalletIcon />
+        <span className="font-mono">{copied ? 'Copied' : short(address)}</span>
+      </button>
+      <button
+        onClick={onDisconnect}
+        className="border border-white/15 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-white/30 hover:text-white"
+      >
+        Disconnect
+      </button>
+    </div>
   );
 }
 
 function PrivyConnect() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const addr = user?.wallet?.address;
-  if (!ready) return <span className="text-xs text-neutral-500">…</span>;
-  if (authenticated && addr) return <Pill onClick={logout}>{short(addr)}</Pill>;
-  return <Pill onClick={login}>Connect</Pill>;
+  if (!ready) return <span className="px-2 text-xs text-neutral-500">…</span>;
+  if (authenticated && addr) return <Connected address={addr} onDisconnect={logout} />;
+  return <ConnectBtn onClick={login} label="Connect wallet" />;
 }
 
 function InjectedConnect() {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-  if (isConnected && address) return <Pill onClick={() => disconnect()}>{short(address)}</Pill>;
+  if (isConnected && address) return <Connected address={address} onDisconnect={() => disconnect()} />;
   return (
-    <Pill onClick={() => connect({ connector: connectors[0] })}>
-      {isPending ? 'Connecting…' : 'Connect wallet'}
-    </Pill>
+    <ConnectBtn
+      onClick={() => connect({ connector: connectors[0] })}
+      label={isPending ? 'Connecting…' : 'Connect wallet'}
+    />
   );
 }
 

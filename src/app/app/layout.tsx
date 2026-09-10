@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Providers } from '@/components/app/Providers';
 import { ToastProvider } from '@/components/app/Toast';
+import { AppBackground } from '@/components/app/AppBackground';
 import { ConnectButton } from '@/components/app/ConnectButton';
 import { NavLink } from '@/components/app/NavLink';
 
@@ -15,8 +16,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <Providers>
       <ToastProvider>
-        <div className="flex min-h-screen flex-col bg-black text-white">
-          <header className="sticky top-0 z-40 bg-black/70 backdrop-blur">
+        <div className="relative flex min-h-screen flex-col text-white">
+          <AppBackground />
+          <header className="sticky top-0 z-40 bg-black/60 backdrop-blur">
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
               <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
                 AQUALADDER

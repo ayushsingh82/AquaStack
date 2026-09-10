@@ -226,5 +226,5 @@ const Stat = ({ k, v }: { k: string; v: React.ReactNode }) => (
 );
 const Skeleton = () => <div className="mt-4 h-24 animate-pulse bg-white/5" />;
 const Empty = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-[#151515] p-12 text-center text-sm text-neutral-400">{children}</div>
+  <div className="border border-white/15 bg-[#151515] p-12 text-center text-sm text-neutral-400">{children}</div>
 );
