@@ -24,7 +24,7 @@ type Verdict = {
   result: EvalResult | null;
   error: string | null;
 };
-type SignerInfo = { kind: 'local-key' | 'none'; address?: string };
+type SignerInfo = { kind: 'privy-session' | 'local-key' | 'none'; address?: string; privyAvailable?: boolean };
 
 const ACTION: Record<string, string> = {
   hold: '#4ade80',
@@ -103,23 +103,31 @@ export function KeeperConsole() {
       </div>
 
       {/* ── Signer status (task 22) ── */}
-      <div className="mt-5 border border-white/15 px-4 py-3 text-xs">
+      <div className="mt-5 space-y-1.5 border border-white/15 px-4 py-3 text-xs">
         {signer == null ? (
           <span className="text-neutral-600">Checking keeper signer…</span>
-        ) : signer.kind === 'local-key' ? (
-          <span className="text-neutral-400">
-            Keeper signer:{' '}
-            <span className="font-mono text-neutral-200">{shortHash(signer.address ?? '')}</span> — local
-            demo key (<span className="text-neutral-500">KEEPER_PRIVATE_KEY</span>). Auto-unwind is armed.
-          </span>
         ) : (
-          <span style={{ color: '#fbbf24' }}>
-            No keeper signer attached — runs can alert but not auto-unwind. Set{' '}
-            <span className="font-mono">KEEPER_PRIVATE_KEY</span> for the demo keeper, or wire a Privy
-            session signer scoped to <span className="font-mono">dock()</span> +{' '}
-            <span className="font-mono">withdraw()</span> in{' '}
-            <span className="font-mono">keeper-signer.ts</span>.
-          </span>
+          <>
+            <p className="text-neutral-400">
+              <span style={{ color: signer.privyAvailable ? '#4ade80' : '#737373' }}>●</span>{' '}
+              Privy session signers:{' '}
+              {signer.privyAvailable
+                ? 'available — each position delegates its own embedded wallet on the detail page'
+                : 'not configured (set NEXT_PUBLIC_PRIVY_APP_ID + PRIVY_APP_SECRET)'}
+            </p>
+            <p className={signer.kind === 'local-key' ? 'text-neutral-400' : 'text-neutral-500'}>
+              <span style={{ color: signer.kind === 'local-key' ? '#4ade80' : '#737373' }}>●</span>{' '}
+              Fallback demo key:{' '}
+              {signer.kind === 'local-key' ? (
+                <>
+                  <span className="font-mono text-neutral-200">{shortHash(signer.address ?? '')}</span>{' '}
+                  (<span className="text-neutral-600">KEEPER_PRIVATE_KEY</span>) — armed for positions with no delegation
+                </>
+              ) : (
+                'none — positions without a Privy delegation are alert-only'
+              )}
+            </p>
+          </>
         )}
       </div>
 

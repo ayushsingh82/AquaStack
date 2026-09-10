@@ -14,6 +14,7 @@ import { Card } from '@/components/app/ui';
 import { ActivityFeed } from './ActivityFeed';
 import { RuleEditor } from './RuleEditor';
 import { UnwindNow } from './UnwindNow';
+import { DelegateKeeper } from './DelegateKeeper';
 
 type Data =
   | { notFound: true }
@@ -146,6 +147,14 @@ export function PositionDetail({ hash }: { hash: Hex }) {
           )}
         </Card>
       </div>
+
+      {/* ── Keeper delegation (task 22) ── */}
+      <Card className="mt-5">
+        <PanelTitle>Keeper</PanelTitle>
+        <div className="mt-4">
+          <DelegateKeeper record={record} onChange={load} />
+        </div>
+      </Card>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         {/* ── Activity (task 16) ── */}

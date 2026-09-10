@@ -131,6 +131,14 @@ export async function saveRuleAction(user: Address, strategyHash: Hex, rule: Rul
   return toClient({ ok: true });
 }
 
+/** Task 22: record that the user delegated `walletAddress` (their Privy embedded
+ *  wallet) to the keeper for this position. Undelegate by passing null. */
+export async function delegateKeeperAction(user: Address, strategyHash: Hex, walletAddress: Address | null) {
+  await ruleStore.update(user, strategyHash, { sessionSignerRef: walletAddress ?? undefined });
+  revalidatePath(`/app/position/${strategyHash}`);
+  return toClient({ ok: true });
+}
+
 /** Task 18: build the unwind tx plan for the client to sign. */
 export async function prepareUnwindAction(user: Address, strategyHash: Hex, withdrawFromAave = true) {
   const rec = await ruleStore.get(user, strategyHash);
