@@ -47,3 +47,6 @@ next-env.d.ts
 
 # testnet spike working area (cloned 1inch contract repos)
 /.sepolia-spike/
+
+# deploy records — local-fork artifacts; the real Base Sepolia one is committed by hand
+/deployments/
