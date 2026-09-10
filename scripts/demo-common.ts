@@ -6,12 +6,13 @@
  * the dashboard immediately. Do NOT import anything from `src/lib/server/*`
  * here — those modules are `server-only` and throw outside an RSC render.
  */
+import './_env';
 import { encodeFunctionData, type Address, type Hex } from 'viem';
 import { Address as SdkAddress } from '@1inch/sdk-core';
 import { SwapVMContract, TakerTraits, type Order } from '@1inch/swap-vm-sdk';
 import { buildDeposit } from '../src/lib/aqua/deposit';
 import {
-  USDC, USDbC, aUSDC, aUSDbC, AAVE_POOL, AQUA_SWAP_VM_ROUTER,
+  CHAIN_ID, USDC, USDbC, aUSDC, aUSDbC, AAVE_POOL, AQUA_SWAP_VM_ROUTER,
   ERC20_ABI, AAVE_POOL_ABI, MAX_UINT256,
 } from '../src/lib/aqua/constants';
 import { JsonFileRuleStore, type PositionRecord, type Rule } from '../src/lib/rules';
@@ -50,7 +51,8 @@ export async function openPosition(opts: {
   const depositBlock = await pub.getBlockNumber();
 
   await deal(USDC, user, opts.usdc);
-  const plan = buildDeposit({ user, usdcAmount: opts.usdc, pegBand: opts.pegBand ?? 'wide' });
+  await deal(USDbC, user, opts.usdc);
+  const plan = buildDeposit({ user, usdcAmount: opts.usdc, usdbcAmount: opts.usdc, pegBand: opts.pegBand ?? 'wide' });
   for (let i = 0; i < plan.shipStepIndex; i++) {
     await sendStep(walletIdx, plan.steps[i].to, plan.steps[i].data, plan.steps[i].label);
   }
@@ -62,7 +64,7 @@ export async function openPosition(opts: {
   await sendStep(walletIdx, shipStep.to, shipStep.data, 'ship');
 
   const record: PositionRecord = {
-    user, strategyHash: plan.strategyHash, chainId: 8453, createdAt: Date.now(),
+    user, strategyHash: plan.strategyHash, chainId: CHAIN_ID, createdAt: Date.now(),
     rule: opts.rule, legA: LEG_A, legB: LEG_B, strategyBytes: plan.strategy.strategyBytes,
     shippedPrincipalA: shipped, shippedPrincipalB: shipped,
     aaveIndexAtShipA: idxA, aaveIndexAtShipB: idxB,

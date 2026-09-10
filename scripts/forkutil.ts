@@ -1,4 +1,5 @@
-/** Minimal Base-fork helpers for the Phase 1 lib fork-tests. */
+/** Minimal Base-fork helpers for the lib fork-tests. */
+import './_env'; // MUST be first — sets NEXT_PUBLIC_CHAIN_ID / Aqua addrs before constants.ts loads
 import {
   createPublicClient, createWalletClient, http, keccak256, encodeAbiParameters,
   parseAbiParameters, pad, toHex, type Address, type Hex,
