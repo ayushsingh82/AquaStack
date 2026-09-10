@@ -157,14 +157,15 @@ export default function Home() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <header className="relative isolate flex min-h-[88vh] flex-col overflow-hidden">
-        <CursorWave className="absolute inset-0 -z-10 h-full w-full" />
+        <CursorWave corners className="absolute inset-0 -z-10 h-full w-full" />
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <span
-            className="mb-7 border px-3 py-1 text-xs tracking-wide text-neutral-300"
-            style={{ borderColor: ACCENT }}
+            className="mb-9 inline-flex items-center gap-2.5 bg-[#151515] px-5 py-2.5 text-sm font-medium text-neutral-100"
           >
-            Built on 1inch Aqua · Base
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LOGO.aqua} alt="" width={20} height={20} className="h-5 w-5 rounded-full" />
+            Built on <span style={{ color: ACCENT }}>1inch&nbsp;Aqua</span>
           </span>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl">
             Deposit once. Your balance works{' '}

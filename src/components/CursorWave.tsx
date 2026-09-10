@@ -56,9 +56,11 @@ interface CursorWaveProps {
   spacing?: number;
   /** influence radius of the cursor in px (default 150) */
   radius?: number;
+  /** keep the effect permanently lit in the four corners (smaller reach on phones) */
+  corners?: boolean;
 }
 
-export default function CursorWave({ className, spacing = 30, radius = 150 }: CursorWaveProps) {
+export default function CursorWave({ className, spacing = 30, radius = 150, corners = false }: CursorWaveProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -126,18 +128,57 @@ export default function CursorWave({ className, spacing = 30, radius = 150 }: Cu
       const { x: mx, y: my, active } = mouse;
       const k = 14;
 
+      // permanently-lit corner emitters, gently breathing. Larger radius than
+      // the cursor + a high pulse floor so the dots near each corner fully
+      // morph into their icons instead of staying dots. Smaller reach on
+      // phones so the four clusters don't swallow the centred text.
+      const cornersOn = corners;
+      const cr = radius * (width < 768 ? 0.85 : 1.5);
+      const cpts: [number, number, number][] = cornersOn
+        ? [
+            [0, 0, 0.9 + 0.1 * Math.sin(now * 0.0018)],
+            [width, 0, 0.9 + 0.1 * Math.sin(now * 0.0018 + 1.9)],
+            [0, height, 0.9 + 0.1 * Math.sin(now * 0.0018 + 3.4)],
+            [width, height, 0.9 + 0.1 * Math.sin(now * 0.0018 + 5.1)],
+          ]
+        : [];
+
       for (const d of dots) {
         let target = 0;
-        let dx = 0;
-        let dy = 0;
-        let dist = 1;
+        // source point the dot is pushed away from (strongest influence wins)
+        let sx = d.x;
+        let sy = d.y;
+
         if (active) {
-          dx = d.x - mx;
-          dy = d.y - my;
-          dist = Math.hypot(dx, dy) || 1;
-          const n = Math.max(0, 1 - dist / radius);
-          target = n * n * (3 - 2 * n);
+          const ddx = d.x - mx;
+          const ddy = d.y - my;
+          const dd = Math.hypot(ddx, ddy) || 1;
+          const n = Math.max(0, 1 - dd / radius);
+          const tt = n * n * (3 - 2 * n);
+          if (tt > target) {
+            target = tt;
+            sx = mx;
+            sy = my;
+          }
         }
+
+        for (const [cx, cy, pulse] of cpts) {
+          const ddx = d.x - cx;
+          const ddy = d.y - cy;
+          const dd = Math.hypot(ddx, ddy) || 1;
+          const n = Math.max(0, 1 - dd / cr);
+          const tt = n * n * (3 - 2 * n) * pulse;
+          if (tt > target) {
+            target = tt;
+            sx = cx;
+            sy = cy;
+          }
+        }
+
+        const dx = d.x - sx;
+        const dy = d.y - sy;
+        const dist = Math.hypot(dx, dy) || 1;
+
         d.t += (target - d.t) * (1 - Math.exp(-dt * k));
         const t = d.t;
 
@@ -225,7 +266,7 @@ export default function CursorWave({ className, spacing = 30, radius = 150 }: Cu
       document.removeEventListener('pointerleave', onPointerLeave);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [spacing, radius]);
+  }, [spacing, radius, corners]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }
