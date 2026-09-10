@@ -10,6 +10,36 @@ that possible.
 
 ---
 
+## Live on Base Sepolia (chain 84532)
+
+The full stack is deployed and exercised end-to-end on **real Base Sepolia** —
+`npm run e2e:live` runs deposit → Aave supply → `ship` → taker swaps → `readPosition`
+→ `buildUnwind` (dock + withdraw) → funds back, all on-chain.
+
+| Contract | Address |
+| --- | --- |
+| Aqua registry (`AquaRouter`) | [`0x0771a4ca37e61993540ed939157635aa7d0f9584`](https://sepolia.basescan.org/address/0x0771a4ca37e61993540ed939157635aa7d0f9584) |
+| `AquaSwapVMRouter` | [`0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1`](https://sepolia.basescan.org/address/0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1) |
+| Aave v3 Pool | [`0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27`](https://sepolia.basescan.org/address/0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27) |
+| USDC / aUSDC | `0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f` / `0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC` |
+| USDT / aUSDT | `0x0a215D8ba66387DCA84B284D18c3B4ec3de6E54a` / `0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018` |
+| Aave faucet (open `mint`) | `0xD9145b5F45Ad4519c7ACcD6E0A4A82e83bB8A6Dc` |
+| WETH (OP-stack predeploy) | `0x4200000000000000000000000000000000000006` |
+
+Deployed by [`scripts/deploy-testnet.ts`](./scripts/deploy-testnet.ts) from the
+opcode-matched `1inch/swap-vm@v1.0.2` + `1inch/aqua@main` vendored artifacts;
+deployer [`0x236d7352170BDf28866A889D970A35A2FB267082`](https://sepolia.basescan.org/address/0x236d7352170BDf28866A889D970A35A2FB267082),
+full record in [`deployments/84532.json`](./deployments/84532.json).
+
+Sample live e2e transactions:
+[`ship`](https://sepolia.basescan.org/tx/0x527570c2e7fe21ae9591211653124556a17d288ecf3ca5b17a6423b1791e0e42) ·
+[taker `swap`](https://sepolia.basescan.org/tx/0xf3f32320aca9a2c047eae0403d1e04650ab1e6330a3b812d718912f017b33c48) ·
+[`dock`](https://sepolia.basescan.org/tx/0x9c7e89d6edf69c27c966fb8eff4023476755d77b477d822615d78c218c3cbea7)
+— maker shipped 1,500 USDC + 1,500 USDT, absorbed 2 taker swaps, then unwound:
+**principal fully returned + a small Aqua spread**, aTokens zero, position `docked`.
+
+---
+
 ## Why one balance can do two jobs
 
 [1inch Aqua](https://1inch.com/aqua/) is a shared-liquidity layer. A maker
@@ -198,20 +228,8 @@ delegated per-position and scoped to `dock()` + Aave `withdraw()` only (a local
 
 ### Contracts — Base Sepolia (chain 84532)
 
-Live and verified end-to-end on real Base Sepolia (`npm run e2e:live`).
-
-| Contract | Address |
-| --- | --- |
-| Aqua registry (`AquaRouter`) | [`0x0771a4ca37e61993540ed939157635aa7d0f9584`](https://sepolia.basescan.org/address/0x0771a4ca37e61993540ed939157635aa7d0f9584) |
-| `AquaSwapVMRouter` | [`0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1`](https://sepolia.basescan.org/address/0x693c469df6e60ba8bff5b9f4fba3455e4cd8dbf1) |
-| Aave v3 Pool | [`0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27`](https://sepolia.basescan.org/address/0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27) |
-| USDC / aUSDC | `0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f` / `0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC` |
-| USDT / aUSDT | `0x0a215D8ba66387DCA84B284D18c3B4ec3de6E54a` / `0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018` |
-| Aave faucet (open `mint`) | `0xD9145b5F45Ad4519c7ACcD6E0A4A82e83bB8A6Dc` |
-
-Deployer `0x236d7352170BDf28866A889D970A35A2FB267082`; full record in
-[`deployments/84532.json`](./deployments/84532.json). Redeploy with
-`scripts/deploy-testnet.ts` (for a local fork, or a fresh testnet).
+Deployed addresses + Basescan links + sample live transactions are in
+[Live on Base Sepolia](#live-on-base-sepolia-chain-84532) above.
 
 ---
 
