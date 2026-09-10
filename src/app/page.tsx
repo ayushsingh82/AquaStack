@@ -124,7 +124,7 @@ const LAYERS = [
   },
   {
     name: 'Aqua integration',
-    desc: 'Builds the deposit plan, the pegged aUSDC/aUSDbC strategy, the live position read model, and the unwind plan.',
+    desc: 'Builds the deposit plan, the pegged aUSDC/aUSDT strategy, the live position read model, and the unwind plan.',
   },
   {
     name: 'Protective rules',
@@ -288,8 +288,8 @@ export default function Home() {
           </ol>
 
           <p className="mt-6 text-xs text-neutral-600">
-            Numbers from <span className="font-mono text-neutral-400">npm run phase3:fork</span> —
-            executed against the live Aqua + Aave v3 contracts on a Base mainnet fork.
+            Numbers from <span className="font-mono text-neutral-400">npm run e2e:testnet</span> —
+            executed against real Aave v3 on Base Sepolia with our own-deployed Aqua stack.
           </p>
         </div>
       </section>
@@ -301,7 +301,7 @@ export default function Home() {
             ARCHITECTURE
           </p>
           <h2 className="mb-16 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            Four layers. All fork-tested against live contracts.
+            Four layers. End-to-end tested on Base Sepolia.
           </h2>
 
           {/* the four layers */}
@@ -329,8 +329,10 @@ export default function Home() {
           {/* foundation */}
           <div className="flex flex-wrap items-center justify-between gap-4 bg-[#151515] p-6">
             <div>
-              <p className="text-base font-medium text-white">Base mainnet</p>
-              <p className="mt-1 text-xs text-neutral-500">real deployed contracts — no testnet</p>
+              <p className="text-base font-medium text-white">Base Sepolia</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                real Aave v3 · Aqua + SwapVM redeployed from the 1inch repos (opcode-matched to the SDK)
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <ProtocolTag glyph="aqua" label="1inch Aqua + SwapVM" />
@@ -339,12 +341,13 @@ export default function Home() {
           </div>
 
           <div className="mt-10">
-            <p className="mb-3 text-xs tracking-[0.15em] text-neutral-500">DEPLOYED ON BASE · CHAIN 8453</p>
+            <p className="mb-3 text-xs tracking-[0.15em] text-neutral-500">BASE SEPOLIA · CHAIN 84532</p>
             <div className="divide-y divide-white/10 border-y border-white/10 font-mono text-xs">
               {[
-                ['Aqua', '0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a'],
-                ['AquaSwapVMRouter', '0x111111338c5091E8440b67B168bAe16a668AC0De'],
-                ['Aave v3 Pool', '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'],
+                ['Aave v3 Pool', '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27'],
+                ['aUSDC', '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC'],
+                ['aUSDT', '0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018'],
+                ['Aqua / AquaSwapVMRouter', 'see deployments/84532.json'],
               ].map(([label, addr]) => (
                 <div key={label} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:gap-4">
                   <span className="min-w-[10rem] text-neutral-500">{label}</span>

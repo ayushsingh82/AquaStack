@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Hex } from 'viem';
 import { useAccount, useChainId, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi';
@@ -50,6 +50,10 @@ export function DepositSign({
   const [steps, setSteps] = useState<string[]>([]);
   const [doneIdx, setDoneIdx] = useState(-1);
   const [error, setError] = useState('');
+  // Retry must reuse the SAME plan (a fresh one has a new salt → new position)
+  // and resume from where it stopped (re-supplying to Aave would double-deposit).
+  const prepRef = useRef<Prep | null>(null);
+  const doneRef = useRef(-1);
 
   const wrongChain = chainId !== CHAIN_ID;
 
@@ -64,27 +68,36 @@ export function DepositSign({
     return hash;
   }
 
+  const markDone = (i: number) => {
+    doneRef.current = i;
+    setDoneIdx(i);
+  };
+
   async function run() {
     if (!address || !client) return;
     setError('');
     setPhase('running');
     try {
-      setNote('Building the plan…');
-      const prep = fromClient<Prep>(
-        await prepareDepositAction({
-          user: address,
-          usdcAmount: usdcBaseUnits.toString(),
-          usdbcAmount: usdbcBaseUnits.toString(),
-          pegBand: pegBand as 'tight' | 'balanced' | 'wide',
-          rule,
-        }),
-      );
-      setSteps([...prep.steps.slice(0, prep.shipStepIndex).map((s) => s.label), 'Ship strategy to Aqua', 'Save position']);
+      let prep = prepRef.current;
+      if (!prep) {
+        setNote('Building the plan…');
+        prep = fromClient<Prep>(
+          await prepareDepositAction({
+            user: address,
+            usdcAmount: usdcBaseUnits.toString(),
+            usdbcAmount: usdbcBaseUnits.toString(),
+            pegBand: pegBand as 'tight' | 'balanced' | 'wide',
+            rule,
+          }),
+        );
+        prepRef.current = prep;
+        setSteps([...prep.steps.slice(0, prep.shipStepIndex).map((s) => s.label), 'Ship strategy to Aqua', 'Save position']);
+      }
 
-      for (let i = 0; i < prep.shipStepIndex; i++) {
+      for (let i = doneRef.current + 1; i < prep.shipStepIndex; i++) {
         setNote(`Signing: ${prep.steps[i].label}`);
         await send(prep.steps[i]);
-        setDoneIdx(i);
+        markDone(i);
       }
 
       setNote('Reading balances after supply…');
@@ -99,9 +112,11 @@ export function DepositSign({
       const ship = fromClient<{ to: Hex; data: Hex; value: bigint; shipped: bigint }>(
         await buildShipStepAction(prep.strategyBytes, aA.toString(), aB.toString()),
       );
-      setNote('Signing: ship to Aqua');
-      await send({ label: 'ship', to: ship.to, data: ship.data, value: 0n });
-      setDoneIdx(prep.shipStepIndex);
+      if (doneRef.current < prep.shipStepIndex) {
+        setNote('Signing: ship to Aqua');
+        await send({ label: 'ship', to: ship.to, data: ship.data, value: 0n });
+        markDone(prep.shipStepIndex);
+      }
 
       setNote('Saving position…');
       await recordDepositAction({
@@ -114,7 +129,7 @@ export function DepositSign({
         aaveIndexAtShipB: idxB.toString(),
         depositBlock: block.toString(),
       });
-      setDoneIdx(prep.shipStepIndex + 1);
+      markDone(prep.shipStepIndex + 1);
       setPhase('done');
       setNote('Position opened.');
       setTimeout(() => router.push('/app'), 1400);
@@ -129,7 +144,7 @@ export function DepositSign({
     <Card>
       <div className="grid gap-2 text-sm">
         <Row k="Deposit" v={userAmountLabel} />
-        <Row k="Strategy" v={`aUSDC / aUSDbC · ${pegBand} band (±${pegPct}%)`} />
+        <Row k="Strategy" v={`pegged · ${pegBand} band (±${pegPct}%)`} />
         <Row
           k="Rule"
           v={ruleSummary(rule)}
@@ -178,9 +193,22 @@ export function DepositSign({
         )}
         {phase === 'running' && <Button disabled>Signing…</Button>}
         {phase === 'error' && (
-          <Button onClick={run} variant="ghost">
-            Retry
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={run}>Resume{doneIdx >= 0 ? ` (step ${doneIdx + 2})` : ''}</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                prepRef.current = null;
+                doneRef.current = -1;
+                setDoneIdx(-1);
+                setSteps([]);
+                setError('');
+                setPhase('idle');
+              }}
+            >
+              Start over
+            </Button>
+          </div>
         )}
         {phase === 'done' && <p className="text-sm text-neutral-300">Redirecting…</p>}
       </div>

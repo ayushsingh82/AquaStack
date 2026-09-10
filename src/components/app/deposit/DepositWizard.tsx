@@ -147,6 +147,11 @@ export function DepositWizard() {
                 {amountNum < 1 ? 'Minimum 1 per leg.' : `Not enough ${!enough(usdcBal) ? 'USDC' : LEG_B_SYMBOL} — use the faucet.`}
               </p>
             )}
+            {isConnected && usdcBal === undefined && legBBal === undefined && (
+              <p className="mt-2 text-xs text-amber-400">
+                Can&apos;t read balances — is the chain-{CHAIN_ID} RPC up?
+              </p>
+            )}
 
             <button
               onClick={getTestTokens}

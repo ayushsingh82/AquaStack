@@ -26,40 +26,45 @@ That single property is the whole idea:
 > double-spent, because Aqua can only ever pull up to the virtual balance, and
 > only during a real swap.
 
-This is verified end-to-end against the live contracts on a Base fork — see
-[What's verified](#whats-verified).
+This is verified end-to-end on Base Sepolia (real Aave v3 + our redeployed Aqua)
+— see [What's verified](#whats-verified).
 
 ---
 
 ## How it works
 
-```
-                  ┌─────────────────────────────────────────┐
-   USDC  ────────▶│  ½ swap → USDbC   ·   supply both to     │
-                  │  Aave v3  →  aUSDC + aUSDbC (in wallet)  │
-                  └────────────────┬────────────────────────┘
-                                   │  approve → aqua.ship()
-                                   ▼
-        ┌──────────────────────────────────────────────────┐
-        │   aUSDC / aUSDbC  —  one balance, two jobs        │
-        │                                                  │
-        │   ▸ keeps earning Aave supply APY (rebasing)      │
-        │   ▸ registered as a 1inch Aqua pegged position    │
-        │     → earns the pegged-curve spread on swaps      │
-        └──────────────────────────┬───────────────────────┘
-                                   │  readPosition() every N minutes
-                                   ▼
-        ┌──────────────────────────────────────────────────┐
-        │   keeper: evaluate(rule)                          │
-        │     hold  ·  alert  ·  unwind → aqua.dock()       │
-        │                         (+ Aave withdraw → USDC)  │
-        └──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    User(["User wallet<br/><sub>the Aqua maker — funds never leave</sub>"])
+
+    User -->|"buildDeposit() · USDC + USDT in"| Dep["deposit.ts<br/><sub>supply both legs to Aave, then ship</sub>"]
+    Dep -->|"supply(USDC) · supply(USDT)"| Aave["Aave v3 Pool<br/><sub>→ aUSDC + aUSDT · rebasing, in the wallet</sub>"]
+    Dep -->|"aqua.ship(pegged aUSDC/aUSDT)"| Aqua["1inch Aqua + SwapVM<br/><sub>virtual balances — no tokens move</sub>"]
+
+    Aave -.->|"supply APY accrues"| Pos[["One balance · two yield streams"]]
+    Aqua -.->|"pegged-curve spread on swaps"| Pos
+
+    Pos --> Read["position.ts<br/><sub>readPosition() → PositionState</sub>"]
+    Keeper(["Keeper<br/><sub>cron · Privy session signer</sub>"]) -.->|"every N min"| Read
+    Read --> Ev{"evaluate(state, rule)"}
+
+    Ev -->|"within limits"| Hold(["hold"])
+    Ev -->|"tripped · alert-only"| Alert(["alert"])
+    Ev -->|"tripped · autoUnwind"| Unw["unwind.ts<br/><sub>aqua.dock() + repay dust + Aave.withdraw()</sub>"]
+    Unw -->|"stablecoins + yield back"| User
+
+    classDef built fill:#241016,stroke:#FD5299,color:#f4f4f6,stroke-width:1.5px
+    classDef proto fill:#0c1f28,stroke:#38bdf8,color:#f4f4f6,stroke-width:1.5px
+    classDef actor fill:#111,stroke:#888,color:#eee,stroke-width:1px
+    class Dep,Pos,Read,Ev,Unw built
+    class Aave,Aqua proto
+    class User,Keeper,Hold,Alert actor
 ```
 
-1. **Split & supply** — half the USDC is swapped to USDbC; both halves are
-   supplied to Aave v3 on Base, becoming `aUSDC` and `aUSDbC`.
+1. **Supply** — the user brings both legs (USDC + USDT on Base Sepolia); both are
+   supplied to Aave v3, becoming `aUSDC` and `aUSDT`.
 2. **Ship to Aqua** — both aTokens are registered as a pegged AMM strategy
-   (`aUSDC/aUSDbC`, a tight band around 1.0) with `aqua.ship()`. **No tokens
+   (`aUSDC/aUSDT`, a tight band around 1.0) with `aqua.ship()`. **No tokens
    move** — this is pure accounting.
 3. **Earn on both sides** — each aToken keeps compounding Aave interest in the
    wallet; swaps routed through Aqua pay the position a spread.
@@ -67,15 +72,15 @@ This is verified end-to-end against the live contracts on a Base fork — see
    when it triggers, calls `aqua.dock()` to release the position and (optionally)
    withdraws from Aave back to USDC.
 
-### Walkthrough (from the fork tests)
+### Walkthrough (`npm run e2e:testnet`, Base Sepolia fork)
 
 | | |
 | --- | --- |
-| deposit | `1,000 USDC` |
-| after split + supply + ship | `~495 aUSDC` + `~495 aUSDbC` shipped; `~5 aUSDC` stays liquid in-wallet |
-| 40 days later | Aave yield brings total return to **+36 bps**; rule's take-profit is +20 bps |
-| keeper fires | `dock()` + 2 × `Aave.withdraw` — 3 txs |
-| back in wallet | **`502.05 USDC`** (principal + Aave yield + pegged spread) |
+| deposit | `5,000 USDC` + `5,000 USDT` → supplied to Aave, shipped to Aqua |
+| after 2 taker swaps + 30 days | **real Aave yield +6.68 USDT**, Aqua spread on top |
+| `evaluate()` | `hold` (+6.7 bps return, under the take-profit) |
+| forced unwind | `dock()` + repay dust + 2 × `Aave.withdraw` — 4 txs |
+| back in wallet | **`~4,996 USDC`** + the USDT leg + yield, fully liquid |
 
 ---
 
@@ -104,15 +109,18 @@ priced in. The tagline is "auto-exits on depeg," not "protects before a loss."
 
 ## What's verified
 
-Every layer is exercised against the **real deployed contracts** on a Base
-mainnet fork (Aqua and SwapVM are mainnet-only — there is no testnet).
+Aqua + SwapVM have no testnet deployment, so we redeploy them from the 1inch
+repos (`1inch/swap-vm@v1.0.2` — its opcode set is byte-identical to the installed
+`@1inch/swap-vm-sdk@0.4.1`) onto **Base Sepolia**, alongside real Aave v3. Every
+layer is then exercised end-to-end on an anvil fork of Base Sepolia:
 
 | Test | Proves |
 | --- | --- |
-| `npm run phase1:fork` | `buildDeposit()` → swap · supply · `ship()` round-trips; strategy hash matches the on-chain router; ship moves no tokens |
-| `npm run phase1b:fork` | after 90 days the **Aave yield accrued in the wallet** while Aqua's virtual balance stayed fixed; `readPosition()` reports it; `buildUnwind()` returns principal + yield, fully liquid |
+| `npm run deploy:testnet` | `AquaRouter` + `AquaSwapVMRouter` deploy from vendored artifacts; `order.encode() → ship → quote → swap → dock` round-trips |
+| `npm run e2e:testnet` | full flow: deposit (USDC + USDT → Aave → ship) → `readPosition()` → taker swaps → +30d **real Aave yield** → `evaluate()` → `buildUnwind()` (dock + repay-debt + withdraw) → funds back |
+| `npm run seed:testnet` | opens a position + a counterparty running swaps + time warps → non-zero swap count, fee PnL and Aave yield on the dashboard |
+| `npm run depeg:testnet -- --run-keeper` | whale swaps push the peg past the rule → keeper **auto-unwinds** via the session signer |
 | `npm run phase2:test` | rule engine: all four thresholds, max-drawdown peak memory, docked → hold; both store implementations round-trip (bigint-safe) |
-| `npm run phase3:fork` | keeper end-to-end: `hold` → threshold trips → `alert` (autoUnwind off) → `alert` (no signer) → `unwound` (3 txs, USDC returned) → terminal |
 
 Earlier de-risking (Phase 0) also confirmed: rebasing aTokens `approve()` and
 `pull()` cleanly through Aqua mid-swap; `dock()` is instant pure-accounting; and
@@ -182,16 +190,17 @@ scripts/             fork tests · the pure unit test · seed + depeg demo scrip
 ```
 
 **Non-custodial.** The user's own wallet is the Aqua maker; AquaLadder never
-holds funds. The keeper acts through a session signer scoped to `dock()` and
-Aave `withdraw()` only — nothing else.
+holds funds. The keeper acts through the user's **Privy embedded wallet**,
+delegated per-position and scoped to `dock()` + Aave `withdraw()` only (a local
+`KEEPER_PRIVATE_KEY` is the demo fallback).
 
-### Deployed contracts — Base (chain 8453)
+### Contracts — Base Sepolia (chain 84532)
 
 | Contract | Address |
 | --- | --- |
-| Aqua registry | `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` |
-| AquaSwapVMRouter | `0x111111338c5091E8440b67B168bAe16a668AC0De` |
-| Aave v3 Pool | `0xA238Dd80C259a72e81d7e4664a9801593F98d1c5` |
+| Aave v3 Pool | `0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27` |
+| aUSDC / aUSDT | `0x10F1…50ACC` / `0xcE3C…0c018` |
+| Aqua registry / AquaSwapVMRouter | deployed by `scripts/deploy-testnet.ts` → `deployments/84532.json` |
 
 ---
 
@@ -199,14 +208,15 @@ Aave `withdraw()` only — nothing else.
 
 - **Two yield sources, not three.** Aave supply APY per leg + the Aqua
   pegged-curve spread. The protective rule is risk management, not yield.
-- **USDbC liquidity on Base is thin** — ~$15k in the deepest stable pool. The
-  swap-based deposit is therefore demo-scale today. A production build mints the
-  second leg through an **Aave borrow-loop** (supply `aUSDC`, borrow USDbC,
-  supply that) instead of a DEX swap — the swap is isolated in one function, so
-  this is a contained change.
+- **The user brings both legs.** The Base-mainnet build swapped ½ USDC → USDbC
+  on Aerodrome first; that's gone (Aerodrome is mainnet-only, USDbC liquidity was
+  thin). A production build would mint the second leg via an Aave borrow-loop.
+- **Aqua is redeployed, not the canonical one.** Aqua/SwapVM have no testnet
+  deployment, so we deploy `1inch/swap-vm@v1.0.2` (opcode-identical to the SDK)
+  and `1inch/aqua@main` ourselves — the 1inch bounty allows this.
 - **`makerFeeBps` is 0.** `withFeeTokenIn()` on the pegged strategy makes the
   on-chain `swap()` revert (quote still works); the LP earns from the band
-  spread instead until this is resolved.
+  spread instead.
 
 ---
 
@@ -215,11 +225,11 @@ Aave `withdraw()` only — nothing else.
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | De-risk spike — Aqua + pegged strategy + aToken rebase + dock guards | ✅ |
-| 1 | Integration library — `deposit` · `strategy` · `position` · `unwind` | ✅ fork-tested |
+| 1 | Integration library — `deposit` · `strategy` · `position` · `unwind` | ✅ Sepolia e2e |
 | 2 | Rule engine + store — `evaluate` · `RuleStore` | ✅ unit-tested |
-| 3 | Keeper — `run` · `tick` · signer · notifier | ✅ fork-tested |
-| 4 | Web app — landing, deposit wizard, position dashboard + detail, keeper console, demo scripts | ✅ builds; on-chain flows need a fork + wallet |
-| — | Privy session-signer wiring for a live keeper (local-key "demo keeper" fallback works) | ⬜ |
+| 3 | Keeper — `run` · `tick` · signer · notifier | ✅ Sepolia e2e (auto-unwind) |
+| 4 | Web app — landing, deposit wizard, dashboard, keeper console, demo scripts | ✅ builds; deposit/keeper flows run on a Sepolia fork |
+| 5 | Base Sepolia — redeploy Aqua/SwapVM, 2-token deposit, Privy session signer | ✅ on a fork; awaiting testnet ETH for the live deploy + Vercel |
 
 Working notes and findings: [`workdone.md`](./workdone.md).
 Build plan: [`plan.md`](./plan.md).
@@ -229,26 +239,32 @@ Build plan: [`plan.md`](./plan.md).
 ## Development
 
 Requires **Node 20+** and [Foundry](https://book.getfoundry.sh/) (`anvil`,
-`cast`) for the fork tests.
+`cast`).
 
 ```bash
 npm install            # runs patch-package (see the note below)
 cp .env.example .env
 
-npm run dev            # Next.js app — http://localhost:3000
+npm run phase2:test    # rule engine — pure unit test, no chain
 
-npm run phase2:test    # rule engine — pure unit test, no fork
-npm run phase1:fork    # deposit + strategy      ┐
-npm run phase1b:fork   # position + unwind       ├─ end-to-end on a fresh Base fork
-npm run phase3:fork    # keeper                  ┘
-npm run seed:fork      # demo: seed a live position + swap activity
-npm run depeg:fork     # demo: push the pool off peg to fire the rule
+npm run e2e:testnet    # full deposit → yield → unwind, on a Base Sepolia fork
+npm run seed:testnet   # demo: seed a live position + swap activity
+npm run depeg:testnet -- --run-keeper   # demo: depeg → keeper auto-unwinds
 ```
 
-The `*:fork` scripts spin up a disposable `anvil` fork of Base mainnet, run the
-script, and tear it down. Override the upstream RPC with `FORK_RPC=…`. The app's
-on-chain flows (deposit, position reads, keeper) need that fork running and a
-wallet on chain 8453 — point `RPC_URL` / `NEXT_PUBLIC_RPC_URL` at it in `.env`.
+The `*:testnet` scripts spin up a disposable `anvil` fork of Base Sepolia,
+deploy the Aqua stack, run the script, and tear it down. Override the upstream
+RPC with `FORK_RPC=…`.
+
+**Running the app on a fork:** in one terminal
+`anvil --fork-url https://base-sepolia-rpc.publicnode.com --chain-id 84532`,
+then `npm run deploy:testnet` (writes `deployments/84532.json` + prints the
+`NEXT_PUBLIC_AQUA*` values for `.env`), then `npm run dev`. Connect a wallet on
+chain 84532; the deposit wizard has a "Get test tokens" button.
+
+**Real Base Sepolia:** point `RPC_URL` / `NEXT_PUBLIC_RPC_URL` at a Base Sepolia
+RPC, `PK=0x…` a funded deployer, `npm run deploy:testnet`, paste the two
+addresses into `.env`, commit `deployments/84532.json`.
 
 > **Note:** the `@1inch/*` SDKs ship a broken ESM build — `@1inch/byte-utils`
 > has no `exports` map, so `@1inch/byte-utils/dist/constants` (imported without a

@@ -10,7 +10,7 @@ import { evaluateRecord } from '@/lib/server/api';
 import { dealErc20 } from '@/lib/server/faucet';
 import { toClient } from '@/lib/serialize';
 import { buildDeposit, type DepositInput } from '@/lib/aqua/deposit';
-import { USDC, USDbC, aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
+import { CHAIN_ID, USDC, USDbC, aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
 import { buildUnwind } from '@/lib/aqua/unwind';
 import { runKeeperOnce, consoleNotifier, type KeeperDeps } from '@/lib/keeper';
 import type { PositionRecord, Rule } from '@/lib/rules';
@@ -77,7 +77,7 @@ export async function recordDepositAction(rec: {
   const record: PositionRecord = {
     user: rec.user,
     strategyHash: rec.strategyHash,
-    chainId: 8453,
+    chainId: CHAIN_ID,
     createdAt: Date.now(),
     rule: rec.rule,
     legA: USDC_LEG,
