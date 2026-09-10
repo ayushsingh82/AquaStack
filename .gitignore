@@ -44,3 +44,6 @@ next-env.d.ts
 
 # app data store
 /.data/
+
+# testnet spike working area (cloned 1inch contract repos)
+/.sepolia-spike/
