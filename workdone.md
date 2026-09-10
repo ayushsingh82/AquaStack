@@ -328,3 +328,79 @@ the second leg.
 ```bash
 npm run phase3:fork    # keeper end-to-end on a fresh Base fork
 ```
+
+---
+
+## 2026-09-10 — Phase 4 (web app) + Phase 5 (Base Sepolia)  ✅
+
+### Phase 4 — web app
+25-task App-UI checklist (`PENDING.md`) done: `/app` shell, deposit wizard,
+positions dashboard + detail (balances / yield / peg gauge / activity / rule
+editor / unwind), keeper console (run + verdict table + run history + signer
+status), toast system, Privy + wagmi wallet with an injected fallback. Landing
+page. Fixed a real blocker: `@1inch/byte-utils` ships no `exports` map so the
+SDK's extensionless `dist/constants` import fails under Node ESM and every
+server action 500s — patched via `patch-package` (`postinstall`).
+
+### Phase 5 — Base Sepolia (chain 84532)
+
+**Spike (Phase A of `testnet-plan.md`) — PASS.**
+- **Version match:** `1inch/swap-vm@v1.0.2` — its `AquaOpcodes.sol` `_opcodes()`
+  array is **byte-identical** to installed `@1inch/swap-vm-sdk@0.4.1`
+  `aquaInstructions` (`peggedSwapGrowPriceRange2D` at index 31 in both). swap-vm
+  v1.0.2 pins `@1inch/aqua#0.1.0`.
+- Both repos `npm install` + `forge build` clean.
+- Deploy order: `AquaRouter(owner)` (= the Aqua registry, from `1inch/aqua`),
+  then `AquaSwapVMRouter(aqua, weth=0x4200…0006, owner, "AquaSwapVMRouter",
+  "1.0.2")` (from `1inch/swap-vm`). Vendored bytecode → `scripts/deploy-testnet.ts`.
+- `scripts/spike-sepolia.ts`: `order.encode()` (706 B) → `ship` (82k gas, wallet
+  tokens unchanged ✓) → `quote` 0.999999 → taker `swap` → `dock` (36k gas). Round-trips.
+
+**Contract/SDK notes**
+- The SDK address maps have no testnet chain — but `buildPeggedStrategy` /
+  `order.encode()` don't consult them, so overriding `src/lib/aqua/constants.ts`
+  (env-switched on `NEXT_PUBLIC_CHAIN_ID`) is enough. Not the blocker `plan.md` feared.
+- **Pegged pair = aUSDC / aUSDT** on Aave v3 Base Sepolia (Pool
+  `0x8bAB…aE27`). No Aerodrome on Sepolia → the ½-swap is dropped; the user
+  brings both legs (`buildDeposit(user, usdcAmount, usdbcAmount)`).
+- **Gas:** viem under-estimates the pegged-swap + Aave-hook path → flaky
+  out-of-gas reverts. Pin `gas: 3_000_000` on those txs.
+- **Unwind:** a taker swap can leave the maker with a small variable debt in one
+  leg (borrow-to-deliver when the aToken is Aave collateral). `buildUnwind` now
+  `repayWithATokens()` for any leg with debt before `withdraw(MAX)`, or the HF
+  check reverts (`0x6679996d = HealthFactorLowerThanLiquidationThreshold`).
+- `sepolia.base.org` is flaky under load; `base-sepolia-rpc.publicnode.com` steady.
+
+**e2e on an anvil fork of Base Sepolia — `npm run e2e:testnet`:**
+deposit (5000 USDC + 5000 USDT → Aave → ship) → `readPosition` → 2 taker swaps →
+warp 30d → **real Aave yield +6.68 USDT** → `evaluate` = hold → `buildUnwind`
+(dock + repay + 2 withdraws, 4 txs) → **~4,996 USDC back** → docked. Also
+`seed:testnet` (position + swaps + yield) and `depeg:testnet --run-keeper`
+(whale swaps → peg 25 bps → keeper **auto-unwinds** via the local-key signer).
+
+**App verified through the browser (injected anvil wallet, Privy off):**
+connect → faucet (mint 10k USDC + 10k USDT) → deposit wizard → 9 txs → position
+on the dashboard (`$2,000 principal`, chain 84532) → detail panels render → rule
+edit (`saveRuleAction`, 30 → 40 bps) → "Run keeper now" (`hold · within limits`,
+logged) → unwind (`dock()` + `withdraw` on-chain, position **docked**).
+
+### Privy session signer (`PENDING.md` #22)
+`DelegateKeeper` (position page) → `useDelegatedActions().delegateWallet` +
+`delegateKeeperAction` records `sessionSignerRef`. `keeper-signer.ts` prefers
+`privySessionSigner` (`@privy-io/server-auth` → `walletApi.ethereum.sendTransaction`,
+scoped to `dock()`/`withdraw()`), falls back to `KEEPER_PRIVATE_KEY`. The
+local-key path is fork-proven; the Privy path compiles but needs a real embedded
+wallet + delegation to exercise.
+
+### Left
+- Real Base Sepolia deploy (blocked on testnet ETH) → then Basescan verify,
+  commit `deployments/84532.json`, Vercel.
+- Privy embedded-wallet path live test; backup demo video; `/code-review`.
+
+### How to reproduce
+```bash
+anvil --fork-url https://base-sepolia-rpc.publicnode.com --chain-id 84532
+npm run deploy:testnet     # deploys Aqua + AquaSwapVMRouter, writes deployments/84532.json
+npm run e2e:testnet        # full deposit → yield → unwind
+npm run depeg:testnet -- --run-keeper
+```

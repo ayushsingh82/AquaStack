@@ -21,7 +21,7 @@ function ConnectBtn({ onClick, label }: { onClick: () => void; label: string }) 
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-2 bg-white px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-neutral-200"
+      className="inline-flex shrink-0 items-center gap-2 bg-white px-3 py-2 text-xs font-semibold text-black transition-colors hover:bg-neutral-200 sm:px-4 sm:text-sm"
     >
       <WalletIcon />
       {label}
@@ -43,18 +43,18 @@ function Connected({ address, onDisconnect }: { address: string; onDisconnect: (
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <button
         onClick={copy}
         title="Copy address"
-        className="inline-flex items-center gap-2 bg-white px-3.5 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+        className="inline-flex items-center gap-2 bg-white px-3 py-2 text-xs font-medium text-black transition-colors hover:bg-neutral-200 sm:px-3.5 sm:text-sm"
       >
         <WalletIcon />
         <span className="font-mono">{copied ? 'Copied' : short(address)}</span>
       </button>
       <button
         onClick={onDisconnect}
-        className="border border-white/15 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-white/30 hover:text-white"
+        className="border border-white/15 px-2.5 py-2 text-xs text-neutral-400 transition-colors hover:border-white/30 hover:text-white sm:px-3 sm:text-sm"
       >
         Disconnect
       </button>

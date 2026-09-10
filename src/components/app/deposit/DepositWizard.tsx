@@ -121,15 +121,15 @@ export function DepositWizard() {
         {step === 0 && (
           <Card>
             <Label>Amount per leg</Label>
-            <div className="flex items-center border border-white/15 bg-black px-3">
+            <div className="flex items-center gap-2 border border-white/15 bg-black px-3">
               <input
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
                 placeholder="1000"
-                className="w-full bg-transparent py-3 text-lg text-white outline-none placeholder:text-neutral-700"
+                className="min-w-0 flex-1 bg-transparent py-3 text-lg text-white outline-none placeholder:text-neutral-700"
               />
-              <span className="text-sm text-neutral-500">USDC + {LEG_B_SYMBOL}</span>
+              <span className="shrink-0 text-xs text-neutral-500">USDC + {LEG_B_SYMBOL}</span>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-x-6 text-xs text-neutral-500">
               <span>USDC: {usdcBal != null ? usdcBal.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}</span>

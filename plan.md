@@ -6,6 +6,13 @@
 UI is not part of this plan. The integration library is the product; a UI slots
 on top of `PositionState` (Phase 1) and the rule model (Phase 2) later.
 
+> **Update (2026-09-10):** Phases 0–3 done and fork-tested; Phase 4 (web app, the
+> 25-task `PENDING.md`) done. **The demo moved to Base Sepolia** — see
+> [`testnet-plan.md`](./testnet-plan.md): we redeploy `1inch/swap-vm@v1.0.2`
+> (opcode-matched to the SDK) + `1inch/aqua` ourselves, pair aUSDC/aUSDT on
+> Aave v3 Base Sepolia, drop the Aerodrome ½-swap. Everything below still
+> describes the mainnet-fork design it was built against.
+
 ## Target setup
 
 | Choice | Pick | Why |
