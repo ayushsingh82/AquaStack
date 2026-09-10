@@ -30,6 +30,7 @@ const ADDR = IS_SEPOLIA
       USDC: '0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f',
       USDbC: '0x0a215D8ba66387DCA84B284D18c3B4ec3de6E54a', // USDT
       AAVE_POOL: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
+      AAVE_DATA_PROVIDER: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
       aUSDC: '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC',
       aUSDbC: '0xcE3CAae5Ed17A7AafCEEbc897DE843fA6CC0c018', // aUSDT
     }
@@ -37,6 +38,7 @@ const ADDR = IS_SEPOLIA
       USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       USDbC: '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
       AAVE_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+      AAVE_DATA_PROVIDER: '0x2d8A3C5677189723C4cB8873CfC9C8976FDF38Ac',
       aUSDC: '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB',
       aUSDbC: '0x0a1d576f3eFeF75b330424287a95A366e8281D54',
     };
@@ -47,6 +49,7 @@ export const USDbC = getAddress(ADDR.USDbC);
 
 // Aave v3
 export const AAVE_POOL = getAddress(ADDR.AAVE_POOL);
+export const AAVE_DATA_PROVIDER = getAddress(ADDR.AAVE_DATA_PROVIDER);
 export const aUSDC = getAddress(ADDR.aUSDC);
 export const aUSDbC = getAddress(ADDR.aUSDbC);
 
@@ -72,7 +75,12 @@ export const ERC20_ABI = parseAbi([
 export const AAVE_POOL_ABI = parseAbi([
   'function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode)',
   'function withdraw(address asset,uint256 amount,address to) returns (uint256)',
+  'function repayWithATokens(address asset,uint256 amount,uint256 interestRateMode) returns (uint256)',
   'function getReserveNormalizedIncome(address asset) view returns (uint256)',
+]);
+
+export const AAVE_DATA_PROVIDER_ABI = parseAbi([
+  'function getUserReserveData(address asset,address user) view returns (uint256 currentATokenBalance,uint256 currentStableDebt,uint256 currentVariableDebt,uint256 principalStableDebt,uint256 scaledVariableDebt,uint256 stableBorrowRate,uint256 liquidityRate,uint40 stableRateLastUpdated,bool usageAsCollateralEnabled)',
 ]);
 
 export const AERODROME_ROUTER_ABI = parseAbi([

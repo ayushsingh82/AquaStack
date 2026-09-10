@@ -25,13 +25,15 @@ type Phase = 'idle' | 'running' | 'done' | 'error';
 
 export function DepositSign({
   userAmountLabel,
-  amountBaseUnits,
+  usdcBaseUnits,
+  usdbcBaseUnits,
   pegBand,
   pegPct,
   rule,
 }: {
   userAmountLabel: string;
-  amountBaseUnits: bigint;
+  usdcBaseUnits: bigint;
+  usdbcBaseUnits: bigint;
   pegBand: string;
   pegPct: number;
   rule: Rule;
@@ -71,12 +73,13 @@ export function DepositSign({
       const prep = fromClient<Prep>(
         await prepareDepositAction({
           user: address,
-          usdcAmount: amountBaseUnits.toString(),
+          usdcAmount: usdcBaseUnits.toString(),
+          usdbcAmount: usdbcBaseUnits.toString(),
           pegBand: pegBand as 'tight' | 'balanced' | 'wide',
           rule,
         }),
       );
-      setSteps([...prep.steps.map((s) => s.label), 'Ship strategy to Aqua', 'Save position']);
+      setSteps([...prep.steps.slice(0, prep.shipStepIndex).map((s) => s.label), 'Ship strategy to Aqua', 'Save position']);
 
       for (let i = 0; i < prep.shipStepIndex; i++) {
         setNote(`Signing: ${prep.steps[i].label}`);
@@ -135,7 +138,7 @@ export function DepositSign({
 
       {wrongChain && phase === 'idle' && (
         <div className="mt-5 border border-white/15 p-3 text-xs text-neutral-400">
-          Wallet is on chain {chainId}. This runs on the Base fork ({CHAIN_ID}).{' '}
+          Wallet is on chain {chainId}. AquaLadder runs on chain {CHAIN_ID}.{' '}
           <button
             className="underline hover:text-white"
             onClick={() => switchChainAsync({ chainId: CHAIN_ID }).catch(() => {})}

@@ -13,7 +13,8 @@
  */
 import { encodeFunctionData, type Address, type Hex, type PublicClient } from 'viem';
 import {
-  AQUA, AQUA_SWAP_VM_ROUTER, AAVE_POOL, AQUA_ABI, AAVE_POOL_ABI, MAX_UINT256,
+  AQUA, AQUA_SWAP_VM_ROUTER, AAVE_POOL, AAVE_DATA_PROVIDER, AQUA_ABI, AAVE_POOL_ABI,
+  AAVE_DATA_PROVIDER_ABI, MAX_UINT256,
 } from './constants';
 import type { TxStep, TokenLeg } from './types';
 import { statusFromTokensCount, type PositionStatus } from './position';
@@ -42,8 +43,26 @@ export interface UnwindPlan {
 const withdraw = (asset: Address, to: Address): Hex =>
   encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: 'withdraw', args: [asset, MAX_UINT256, to] });
 
+const repayWithATokens = (asset: Address): Hex =>
+  encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: 'repayWithATokens', args: [asset, MAX_UINT256, 2n] });
+
 const dock = (strategyHash: Hex, aTokens: Address[]): Hex =>
   encodeFunctionData({ abi: AQUA_ABI, functionName: 'dock', args: [AQUA_SWAP_VM_ROUTER, strategyHash, aTokens] });
+
+/** Aqua's pegged-swap settlement can leave the maker with a small variable debt
+ *  in one leg (borrow-to-deliver when the aToken is locked as Aave collateral).
+ *  Repaying it with the aToken keeps `withdraw(MAX)` from tripping the HF check. */
+async function variableDebt(client: PublicClient, asset: Address, user: Address): Promise<bigint> {
+  try {
+    const res = (await client.readContract({
+      address: AAVE_DATA_PROVIDER, abi: AAVE_DATA_PROVIDER_ABI,
+      functionName: 'getUserReserveData', args: [asset, user],
+    })) as unknown as readonly bigint[];
+    return res[2] ?? 0n; // currentVariableDebt
+  } catch {
+    return 0n;
+  }
+}
 
 export async function buildUnwind(client: PublicClient, input: UnwindInput): Promise<UnwindPlan> {
   const { user, strategyHash, legA, legB } = input;
@@ -55,12 +74,15 @@ export async function buildUnwind(client: PublicClient, input: UnwindInput): Pro
   })) as [bigint, number];
   const status = statusFromTokensCount(tokensCount);
 
-  const withdrawSteps: TxStep[] = input.withdrawFromAave
-    ? [
-        { label: 'Withdraw leg A from Aave', to: AAVE_POOL, data: withdraw(legA.token, to) },
-        { label: 'Withdraw leg B from Aave', to: AAVE_POOL, data: withdraw(legB.token, to) },
-      ]
-    : [];
+  const withdrawSteps: TxStep[] = [];
+  if (input.withdrawFromAave) {
+    for (const [name, leg] of [['leg A', legA], ['leg B', legB]] as const) {
+      if ((await variableDebt(client, leg.token, user)) > 0n) {
+        withdrawSteps.push({ label: `Repay ${name} debt (aToken)`, to: AAVE_POOL, data: repayWithATokens(leg.token) });
+      }
+      withdrawSteps.push({ label: `Withdraw ${name} from Aave`, to: AAVE_POOL, data: withdraw(leg.token, to) });
+    }
+  }
 
   if (status !== 'active') {
     return { steps: withdrawSteps, dockStep: null, alreadyDocked: true, status };

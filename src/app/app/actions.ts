@@ -7,30 +7,39 @@ import { publicClient } from '@/lib/server/client';
 import { keeperSignerFor, keeperSignerInfo } from '@/lib/server/keeper-signer';
 import { appendKeeperRun, listKeeperRuns } from '@/lib/server/keeper-log';
 import { evaluateRecord } from '@/lib/server/api';
+import { dealErc20 } from '@/lib/server/faucet';
 import { toClient } from '@/lib/serialize';
 import { buildDeposit, type DepositInput } from '@/lib/aqua/deposit';
-import { aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
+import { USDC, USDbC, aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
 import { buildUnwind } from '@/lib/aqua/unwind';
 import { runKeeperOnce, consoleNotifier, type KeeperDeps } from '@/lib/keeper';
 import type { PositionRecord, Rule } from '@/lib/rules';
 import { encodeFunctionData } from 'viem';
 
-const USDC_LEG = { token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address, aToken: aUSDC, decimals: 6 };
-const USDbC_LEG = { token: '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA' as Address, aToken: aUSDbC, decimals: 6 };
+const USDC_LEG = { token: USDC, aToken: aUSDC, decimals: 6 };
+const USDbC_LEG = { token: USDbC, aToken: aUSDbC, decimals: 6 };
+
+/** Faucet: mint test USDC + leg-B to the user (fork RPC only — anvil / Tenderly). */
+export async function getTestTokensAction(user: Address) {
+  const amount = 10_000n * 10n ** 6n;
+  await dealErc20(USDC, user, amount);
+  await dealErc20(USDbC, user, amount);
+  return toClient({ ok: true, usdc: amount, legB: amount });
+}
 
 /** Task 9: build the ordered deposit tx plan for the client to sign. */
 export async function prepareDepositAction(input: {
   user: Address;
   usdcAmount: string; // base units
+  usdbcAmount?: string; // leg B — defaults to usdcAmount
   pegBand?: DepositInput['pegBand'];
   rule: Rule;
-  swapSlippageBps?: number;
 }) {
   const plan = buildDeposit({
     user: input.user,
     usdcAmount: BigInt(input.usdcAmount),
+    usdbcAmount: input.usdbcAmount ? BigInt(input.usdbcAmount) : undefined,
     pegBand: input.pegBand,
-    swapSlippageBps: input.swapSlippageBps,
   });
   return toClient({
     strategyHash: plan.strategyHash,
