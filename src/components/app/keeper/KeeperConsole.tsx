@@ -2,12 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  getKeeperVerdictsAction,
-  getKeeperLogAction,
-  getKeeperStatusAction,
-  runKeeperAction,
-} from '@/app/app/actions';
+import { getKeeperVerdictsAction, getKeeperLogAction, runKeeperAction } from '@/app/app/actions';
 import { fromClient } from '@/lib/serialize';
 import type { PositionState } from '@/lib/aqua/position';
 import type { EvalResult, PositionRecord } from '@/lib/rules/types';
@@ -24,8 +19,6 @@ type Verdict = {
   result: EvalResult | null;
   error: string | null;
 };
-type SignerInfo = { kind: 'privy-session' | 'local-key' | 'none'; address?: string; privyAvailable?: boolean };
-
 const ACTION: Record<string, string> = {
   hold: '#4ade80',
   alert: '#fbbf24',
@@ -39,21 +32,15 @@ export function KeeperConsole() {
   const toast = useToast();
   const [verdicts, setVerdicts] = useState<Verdict[] | null>(null);
   const [runs, setRuns] = useState<KeeperRun[] | null>(null);
-  const [signer, setSigner] = useState<SignerInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [v, l, s] = await Promise.all([
-        getKeeperVerdictsAction(),
-        getKeeperLogAction(),
-        getKeeperStatusAction(),
-      ]);
+      const [v, l] = await Promise.all([getKeeperVerdictsAction(), getKeeperLogAction()]);
       setVerdicts(fromClient<Verdict[]>(v));
       setRuns(fromClient<KeeperRun[]>(l));
-      setSigner(fromClient<SignerInfo>(s));
     } finally {
       setLoading(false);
     }
@@ -100,35 +87,6 @@ export function KeeperConsole() {
         <Button onClick={run} disabled={running}>
           {running ? 'Running…' : 'Run keeper now'}
         </Button>
-      </div>
-
-      {/* ── Signer status (task 22) ── */}
-      <div className="mt-5 space-y-1.5 bg-[#151515] px-4 py-3 text-xs">
-        {signer == null ? (
-          <span className="text-neutral-600">Checking keeper signer…</span>
-        ) : (
-          <>
-            <p className="text-neutral-400">
-              <span style={{ color: signer.privyAvailable ? '#4ade80' : '#737373' }}>●</span>{' '}
-              Privy session signers:{' '}
-              {signer.privyAvailable
-                ? 'available — each position delegates its own embedded wallet on the detail page'
-                : 'not configured (set NEXT_PUBLIC_PRIVY_APP_ID + PRIVY_APP_SECRET)'}
-            </p>
-            <p className={signer.kind === 'local-key' ? 'text-neutral-400' : 'text-neutral-500'}>
-              <span style={{ color: signer.kind === 'local-key' ? '#4ade80' : '#737373' }}>●</span>{' '}
-              Fallback demo key:{' '}
-              {signer.kind === 'local-key' ? (
-                <>
-                  <span className="font-mono text-neutral-200">{shortHash(signer.address ?? '')}</span>{' '}
-                  (<span className="text-neutral-600">KEEPER_PRIVATE_KEY</span>) — armed for positions with no delegation
-                </>
-              ) : (
-                'none — positions without a Privy delegation are alert-only'
-              )}
-            </p>
-          </>
-        )}
       </div>
 
       {/* ── Verdict table (task 20) ── */}
