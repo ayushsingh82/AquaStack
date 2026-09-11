@@ -25,7 +25,7 @@ const aaveIndex = (a: `0x${string}`) =>
 
 async function main() {
   const user = accounts[0].address;
-  log.h('=== AquaLadder Phase 3 fork-test — keeper ===');
+  log.h('=== AquaStack Phase 3 fork-test — keeper ===');
   log.info(`RPC ${RPC}  block ${await pub.getBlockNumber()}`);
 
   // ---- 1. deposit + record ----

@@ -24,7 +24,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 href="/"
                 className="shrink-0 text-xs font-semibold tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]"
               >
-                AQUALADDER
+                AQUASTACK
               </Link>
               <nav className="hidden items-center gap-8 md:flex">
                 {NAV.map((n) => (

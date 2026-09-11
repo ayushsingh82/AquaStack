@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "AquaLadder — deposit once, your balance works two jobs",
+  title: "AquaStack — deposit once, your balance works two jobs",
   description:
     "One stablecoin deposit earns Aave lending yield and provides 1inch Aqua liquidity at the same time, with an automated rule that exits on a depeg.",
 };

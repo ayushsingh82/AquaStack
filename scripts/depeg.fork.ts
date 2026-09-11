@@ -27,7 +27,7 @@ const WHALE_STEP = 60n * 10n ** 6n; // per one-directional whale swap
 
 async function main() {
   const runKeeper = process.argv.includes('--run-keeper');
-  log.h('=== AquaLadder depeg demo ===');
+  log.h('=== AquaStack depeg demo ===');
   log.info(`RPC block ${await pub.getBlockNumber()}`);
 
   const { record, order } = await openPosition({

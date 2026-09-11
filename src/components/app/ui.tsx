@@ -10,13 +10,7 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' }) {
   const base = 'px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
   if (variant === 'primary') {
-    return (
-      <button
-        {...props}
-        className={`${base} border bg-black hover:bg-white/5 ${className}`}
-        style={{ borderColor: ACCENT, color: ACCENT }}
-      />
-    );
+    return <button {...props} className={`${base} bg-white text-black hover:bg-neutral-200 ${className}`} />;
   }
   return <button {...props} className={`${base} border border-white/20 text-white hover:border-white/40 ${className}`} />;
 }

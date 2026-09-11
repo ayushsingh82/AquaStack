@@ -53,8 +53,7 @@ export function PositionsList() {
         </div>
         <Link
           href="/app/deposit"
-          className="border bg-black px-4 py-2 text-sm font-medium transition-colors hover:bg-white/5"
-          style={{ borderColor: ACCENT, color: ACCENT }}
+          className="bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
         >
           New deposit
         </Link>
@@ -75,8 +74,7 @@ export function PositionsList() {
           <p className="text-sm text-neutral-400">No positions yet.</p>
           <Link
             href="/app/deposit"
-            className="mt-4 inline-block border bg-black px-4 py-2 text-sm font-medium transition-colors hover:bg-white/5"
-            style={{ borderColor: ACCENT, color: ACCENT }}
+            className="mt-4 inline-block bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
           >
             Open your first position
           </Link>

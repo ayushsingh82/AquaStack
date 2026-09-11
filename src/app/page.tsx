@@ -47,7 +47,7 @@ const FEATURES = [
       <>
         Your deposit is supplied to Aave as a <span style={{ color: ACCENT }}>rebasing aToken</span> and, at
         the same time, registered as 1inch Aqua liquidity. The tokens{' '}
-        <span style={{ color: ACCENT }}>never leave your wallet</span> — so they keep earning lending
+        <span style={{ color: ACCENT }}>never leave your wallet</span>, so they keep earning lending
         interest while they back swaps.
       </>
     ),
@@ -58,8 +58,8 @@ const FEATURES = [
     title: 'Auto-exit on depeg',
     body: (
       <>
-        A rule you set — <span style={{ color: ACCENT }}>peg deviation, take-profit, stop-loss,
-        max-drawdown</span> — is watched every few minutes. When it trips, a keeper unwinds the
+        A rule you set (<span style={{ color: ACCENT }}>peg deviation, take-profit, stop-loss,
+        max-drawdown</span>) is watched every few minutes. When it trips, a keeper unwinds the
         position and returns your stablecoins, <span style={{ color: ACCENT }}>even while you are offline</span>.
       </>
     ),
@@ -70,9 +70,9 @@ const FEATURES = [
     title: 'Non-custodial by design',
     body: (
       <>
-        Your own wallet is the Aqua maker. AquaLadder <span style={{ color: ACCENT }}>never holds funds</span>.
+        Your own wallet is the Aqua maker. AquaStack <span style={{ color: ACCENT }}>never holds funds</span>.
         The keeper only ever gets a session signer scoped to <code className="text-neutral-300">dock()</code>{' '}
-        and <code className="text-neutral-300">withdraw()</code> — nothing else.
+        and <code className="text-neutral-300">withdraw()</code>. Nothing else.
       </>
     ),
   },
@@ -94,7 +94,7 @@ const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO
   {
     tag: 'deposit',
     big: '1,000 USDC',
-    small: 'you deposit — one signature',
+    small: 'you deposit, one signature',
     icons: ['usdc'],
   },
   {
@@ -106,13 +106,13 @@ const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO
   {
     tag: 'rule fires',
     big: '+36 bps',
-    small: 'total return after 40 days — Aave APY + Aqua spread trips the take-profit rule',
+    small: 'total return after 40 days: Aave APY + Aqua spread trips the take-profit rule',
     icons: [],
   },
   {
     tag: 'protected exit',
     big: '502.05 USDC',
-    small: 'keeper docks the Aqua position and withdraws from Aave — principal + yield, back in your wallet',
+    small: 'keeper docks the Aqua position and withdraws from Aave: principal + yield, back in your wallet',
     icons: ['usdc'],
   },
 ];
@@ -128,7 +128,7 @@ const LAYERS = [
   },
   {
     name: 'Protective rules',
-    desc: 'A pure evaluator — peg deviation, take-profit, stop-loss, max-drawdown → hold · alert · unwind — over a per-position rule store.',
+    desc: 'A pure evaluator (peg deviation, take-profit, stop-loss, max-drawdown → hold · alert · unwind) over a per-position rule store.',
   },
   {
     name: 'Keeper',
@@ -143,12 +143,11 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
-            AQUALADDER
+            AQUASTACK
           </Link>
           <Link
             href="/app"
-            className="border bg-black px-4 py-2 text-sm font-medium transition-colors hover:bg-white/5"
-            style={{ borderColor: ACCENT, color: ACCENT }}
+            className="bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
           >
             Open app
           </Link>
@@ -173,14 +172,13 @@ export default function Home() {
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-neutral-400 sm:text-lg">
             One stablecoin deposit earns Aave lending yield <em>and</em> provides 1inch Aqua
-            liquidity at the same time — with an automated rule that exits the position when the
+            liquidity at the same time, with an automated rule that exits the position when the
             peg breaks.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/app"
-              className="border bg-black px-6 py-3 text-sm font-medium transition-colors hover:bg-white/5"
-              style={{ borderColor: ACCENT, color: ACCENT }}
+              className="bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
             >
               Open the app
             </Link>
@@ -232,7 +230,7 @@ export default function Home() {
             THE FLOW
           </p>
           <h2 className="mb-8 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            From a fork test — deposit to protected exit.
+            From a fork test: deposit to protected exit.
           </h2>
 
           {/* recipe strip */}
@@ -288,7 +286,7 @@ export default function Home() {
           </ol>
 
           <p className="mt-6 text-xs text-neutral-600">
-            Numbers from <span className="font-mono text-neutral-400">npm run e2e:testnet</span> —
+            Numbers from <span className="font-mono text-neutral-400">npm run e2e:testnet</span>,
             executed against real Aave v3 on Base Sepolia with our own-deployed Aqua stack.
           </p>
         </div>
@@ -368,7 +366,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 sm:grid-cols-4">
             <div className="sm:col-span-2">
-              <p className="text-sm font-semibold tracking-[0.22em]">AQUALADDER</p>
+              <p className="text-sm font-semibold tracking-[0.22em]">AQUASTACK</p>
               <p className="mt-3 max-w-sm text-sm text-neutral-500">
                 One stablecoin deposit that earns Aave lending yield and provides 1inch Aqua
                 liquidity at once, with an automated protective exit.
@@ -399,7 +397,7 @@ export default function Home() {
               <ul className="mt-4 space-y-2 text-sm">
                 <li>
                   <a
-                    href="https://github.com/ayushsingh82/AquaLadder"
+                    href="https://github.com/ayushsingh82/AquaStack"
                     target="_blank"
                     rel="noreferrer"
                     className="text-neutral-400 hover:text-white"
@@ -426,7 +424,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-14 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-neutral-600 sm:flex-row sm:items-center sm:justify-between">
-            <span>© 2026 AquaLadder · built at ETHGlobal</span>
+            <span>© 2026 AquaStack · built at ETHGlobal</span>
             <span>Not affiliated with 1inch or Aave. Nothing here is financial advice.</span>
           </div>
         </div>

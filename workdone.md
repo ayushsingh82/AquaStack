@@ -1,4 +1,4 @@
-# Work log — AquaLadder
+# Work log — AquaStack
 
 ## 2026-09-08 — Phase 0 spike, items 1 & 2  ✅ PASS
 
@@ -36,7 +36,7 @@ Full lifecycle round-tripped against the **live deployed** router bytecode on th
 | `aqua.dock(router, hash, [USDC,USDT])` | success, **35 860 gas**, instant |
 | second `dock()` | **reverts** `DockingShouldCloseAllTokens` (`0xbbe8d44d`) — idempotency guard confirmed (item 5 preview) |
 
-**Opcode set (`instructions.aquaInstructions`, 34 slots):** includes `peggedSwapGrowPriceRange2D` (idx 32), `concentrateGrowLiquidity2D` (18), `xycSwapXD` (17), `decayXD`, `flatFeeAmountInXD`, `aquaProtocolFeeAmountInXD`, `Controls.deadline`, `Controls.onlyTakerTokenBalanceGte`, `Controls.salt`. Everything AquaLadder's strategy + guards need — and the pegged opcode is **proven to execute**, not just present in the SDK table.
+**Opcode set (`instructions.aquaInstructions`, 34 slots):** includes `peggedSwapGrowPriceRange2D` (idx 32), `concentrateGrowLiquidity2D` (18), `xycSwapXD` (17), `decayXD`, `flatFeeAmountInXD`, `aquaProtocolFeeAmountInXD`, `Controls.deadline`, `Controls.onlyTakerTokenBalanceGte`, `Controls.salt`. Everything AquaStack's strategy + guards need — and the pegged opcode is **proven to execute**, not just present in the SDK table.
 
 ### Extra facts learned (feed into Phase 1)
 - **`ship()` takes no tokens.** It writes `balances[maker][app][strategyHash][token]` and needs the maker to have `approve(AQUA, …)` beforehand so `pull()` can move tokens *during a swap*. This is the mechanic that makes "aToken keeps rebasing in the wallet while it's live liquidity" plausible — **still must be tested with a real rebasing aToken (item 3/4).**
@@ -108,7 +108,7 @@ After `dock()`:
 
 ### How to reproduce
 ```bash
-cd aqualadder/spike && npm install
+cd aquastack/spike && npm install
 npm run phase0     # items 1 & 2
 npm run phase0b    # items 3, 4, 5
 ```
@@ -167,7 +167,7 @@ The lib isolates the swap in one `swapExactIn()` helper, so switching venue/mech
 
 ### How to reproduce
 ```bash
-cd aqualadder && npm install
+cd aquastack && npm install
 npm run phase1:fork   # fresh Base fork + deposit.ts/strategy.ts end-to-end
 ```
 
@@ -225,7 +225,7 @@ All 4 modules done and fork-tested. Remaining before a UI:
 
 ### How to reproduce
 ```bash
-cd aqualadder && npm install
+cd aquastack && npm install
 npm run phase1:fork    # modules 1 & 2  — deposit + strategy
 npm run phase1b:fork   # modules 3 & 4  — position + unwind
 ```

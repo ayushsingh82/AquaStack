@@ -153,7 +153,7 @@ export function DepositSign({
 
       {wrongChain && phase === 'idle' && (
         <div className="mt-5 border border-white/15 p-3 text-xs text-neutral-400">
-          Wallet is on chain {chainId}. AquaLadder runs on chain {CHAIN_ID}.{' '}
+          Wallet is on chain {chainId}. AquaStack runs on chain {CHAIN_ID}.{' '}
           <button
             className="underline hover:text-white"
             onClick={() => switchChainAsync({ chainId: CHAIN_ID }).catch(() => {})}

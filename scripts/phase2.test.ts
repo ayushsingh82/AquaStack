@@ -117,7 +117,7 @@ async function main() {
 
   for (const [name, store] of [
     ['MemoryRuleStore', new MemoryRuleStore()],
-    ['JsonFileRuleStore', new JsonFileRuleStore(join(tmpdir(), `aqualadder-${randomUUID()}.json`))],
+    ['JsonFileRuleStore', new JsonFileRuleStore(join(tmpdir(), `aquastack-${randomUUID()}.json`))],
   ] as const) {
     h(`[store] ${name}`);
     await store.put(rec);

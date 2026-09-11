@@ -1,6 +1,6 @@
 # Phase 0 de-risk spike (TypeScript)
 
-Scripts that verify AquaLadder's core mechanic against a **Base mainnet fork** before
+Scripts that verify AquaStack's core mechanic against a **Base mainnet fork** before
 building the real app. Results: `../workdone.md`. Context: `../plan.md`.
 
 ## Run

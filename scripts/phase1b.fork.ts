@@ -41,7 +41,7 @@ async function takerSwap(amountAUsdbc: bigint, order: import('@1inch/swap-vm-sdk
 async function main() {
   const user = accounts[0].address;
   const taker = accounts[1].address;
-  log.h('=== AquaLadder Phase 1 fork-test — position.ts + unwind.ts ===');
+  log.h('=== AquaStack Phase 1 fork-test — position.ts + unwind.ts ===');
   log.info(`block ${await pub.getBlockNumber()}  user ${user}`);
 
   // ---- 1. deposit ----

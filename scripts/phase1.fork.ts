@@ -26,7 +26,7 @@ async function virt(hash: `0x${string}`, token: `0x${string}`) {
 
 async function main() {
   const user = accounts[0].address;
-  log.h('=== AquaLadder Phase 1 fork-test — deposit.ts + strategy.ts ===');
+  log.h('=== AquaStack Phase 1 fork-test — deposit.ts + strategy.ts ===');
   log.info(`RPC ${RPC}  chainId ${await pub.getChainId()}  block ${await pub.getBlockNumber()}`);
 
   // NB: USDbC DEX liquidity on Base is thin (~15k in the Aerodrome stable pool),

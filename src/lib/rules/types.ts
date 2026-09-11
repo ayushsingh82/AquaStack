@@ -2,7 +2,7 @@ import type { Address, Hex } from 'viem';
 import type { TokenLeg } from '../aqua/types';
 
 /**
- * The protective rule attached to one AquaLadder position.
+ * The protective rule attached to one AquaStack position.
  * Every threshold is optional — set only the ones you want. All are checked
  * on each evaluation; the first one that fires triggers an exit.
  */

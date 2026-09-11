@@ -8,8 +8,8 @@ const ACCENT = '#FD5299';
 
 const STEPS = [
   { k: 'USDC', v: 'you deposit' },
-  { k: 'aUSDC + aUSDbC', v: 'supplied to Aave — rebasing in your wallet' },
-  { k: 'aqua.ship()', v: 'registered as pegged liquidity — tokens never move' },
+  { k: 'aUSDC + aUSDbC', v: 'supplied to Aave, rebasing in your wallet' },
+  { k: 'aqua.ship()', v: 'registered as pegged liquidity, tokens never move' },
   { k: 'swap settles', v: 'Aqua pulls one leg, pushes the other back' },
   { k: 'still deployed', v: 'rebalanced, both legs still earning Aave yield' },
 ];
@@ -43,7 +43,7 @@ export default function LiquidityFlow() {
             LIQUIDITY
           </p>
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Liquidity that flows both ways — and never stops earning.
+            Liquidity that flows both ways and never stops earning.
           </h2>
           <p className="mt-4 text-sm leading-6 text-neutral-300">
             The capital is never parked. It sits in your wallet as an interest-bearing aToken,

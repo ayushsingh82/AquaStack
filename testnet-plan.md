@@ -1,4 +1,4 @@
-# AquaLadder on Base Sepolia — deploy + demo plan
+# AquaStack on Base Sepolia — deploy + demo plan
 
 ---
 

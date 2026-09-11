@@ -48,7 +48,7 @@ export default function ClosingCTA() {
             Open the app
           </Link>
           <a
-            href="https://github.com/ayushsingh82/AquaLadder"
+            href="https://github.com/ayushsingh82/AquaStack"
             target="_blank"
             rel="noreferrer"
             className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white/50"

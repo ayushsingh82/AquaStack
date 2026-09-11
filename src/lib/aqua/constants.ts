@@ -1,5 +1,5 @@
 /**
- * Addresses + ABIs for the AquaLadder integration layer (server-only).
+ * Addresses + ABIs for the AquaStack integration layer (server-only).
  *
  * Switched by NEXT_PUBLIC_CHAIN_ID:
  *   8453  Base mainnet   — Aqua/Router from the SDK maps; pegged pair aUSDC / aUSDbC

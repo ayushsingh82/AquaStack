@@ -1,6 +1,6 @@
 # Hackathon — targeted bounty tracks
 
-Two sponsors. AquaLadder must satisfy the qualification lists below.
+Two sponsors. AquaStack must satisfy the qualification lists below.
 
 ---
 
@@ -33,7 +33,7 @@ Same brief and same qualification requirements, **Continuity Track participants 
 - Aqua contracts — https://github.com/1inch/aqua
 - Aqua SDK — https://github.com/1inch/sdks/tree/master/typescript/aqua
 
-### How AquaLadder qualifies
+### How AquaStack qualifies
 - Uses the **official** Aqua registry + AquaSwapVMRouter on Base (no redeploy) —
   `src/lib/aqua/constants.ts`.
 - The "sophisticated position": a single stablecoin balance is **simultaneously**
@@ -92,7 +92,7 @@ conversions, swaps, savings, payouts, card-like spend.
       guided onboarding → a mocked card is OK but you still need another **live**
       Privy flow.
 
-### Where AquaLadder stands on Privy (as of this file)
+### Where AquaStack stands on Privy (as of this file)
 
 **Integrated:**
 - `PrivyProvider` + `@privy-io/wagmi` wired in `src/components/app/Providers.tsx`

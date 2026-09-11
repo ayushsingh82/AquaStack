@@ -1,5 +1,5 @@
 /**
- * Module 3 — read model for a live AquaLadder position.
+ * Module 3 — read model for a live AquaStack position.
  *
  * Pulls together, for one shipped strategy:
  *   - Aqua virtual balances per leg           (fixed since ship)

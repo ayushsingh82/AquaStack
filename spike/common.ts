@@ -1,4 +1,4 @@
-/** Shared helpers for the AquaLadder Phase 0 spikes. */
+/** Shared helpers for the AquaStack Phase 0 spikes. */
 import {
   createPublicClient, createWalletClient, http, parseAbi, keccak256,
   encodeAbiParameters, parseAbiParameters, pad, toHex, getAddress,

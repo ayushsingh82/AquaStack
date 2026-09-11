@@ -1,4 +1,4 @@
-# AquaLadder — build plan (integration + keeper)
+# AquaStack — build plan (integration + keeper)
 
 > Deposit once. One stablecoin balance earns Aave lending yield **and** 1inch Aqua
 > LP fees at the same time, with an automated rule that unwinds on a depeg.

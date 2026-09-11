@@ -1,11 +1,11 @@
-# AquaLadder
+# AquaStack
 
 **Deposit USDC once. The same balance earns Aave lending yield *and* provides
 1inch Aqua liquidity at the same time — with an automated rule that exits the
 position when the peg breaks.**
 
 In normal DeFi, a dollar does one job: it's lent on Aave, *or* it's LP'd on a
-DEX. You pick. AquaLadder runs both on a single balance, because 1inch Aqua makes
+DEX. You pick. AquaStack runs both on a single balance, because 1inch Aqua makes
 that possible.
 
 ---
@@ -221,7 +221,7 @@ src/components/app/   client UI — deposit wizard, position panels, keeper cons
 scripts/             fork tests · the pure unit test · seed + depeg demo scripts
 ```
 
-**Non-custodial.** The user's own wallet is the Aqua maker; AquaLadder never
+**Non-custodial.** The user's own wallet is the Aqua maker; AquaStack never
 holds funds. The keeper acts through the user's **Privy embedded wallet**,
 delegated per-position and scoped to `dock()` + Aave `withdraw()` only (a local
 `KEEPER_PRIVATE_KEY` is the demo fallback).

@@ -1,5 +1,5 @@
 /**
- * AquaLadder Phase 0 de-risk spike — items 3, 4, 5
+ * AquaStack Phase 0 de-risk spike — items 3, 4, 5
  *
  *  3. Rebase test (the critical one): ship a pegged aUSDC/aUSDbC strategy, warp the
  *     fork clock, and confirm the Aave yield accrues IN THE MAKER WALLET while Aqua's
@@ -43,7 +43,7 @@ async function supplyToAave(w: typeof makerW, who: `0x${string}`, asset: `0x${st
 }
 
 async function main() {
-  c.h('=== AquaLadder Phase 0 spike — items 3, 4, 5 (Base fork) ===');
+  c.h('=== AquaStack Phase 0 spike — items 3, 4, 5 (Base fork) ===');
   const cid = await pub.getChainId();
   c.info(`RPC ${RPC}  chainId ${cid}  block ${await pub.getBlockNumber()}`);
   if (cid !== CHAIN_ID) throw new Error('not a Base fork');

@@ -1,5 +1,5 @@
 /**
- * AquaLadder Phase 0 de-risk spike — items 1 & 2
+ * AquaStack Phase 0 de-risk spike — items 1 & 2
  *
  *  1. Are Aqua + AquaSwapVMRouter callable on a Base fork? (bytecode + read methods)
  *  2. Does the pegged strategy run on today's pre-Fusaka deployment?
@@ -18,7 +18,7 @@ import {
 } from './common';
 
 async function main() {
-  c.h('=== AquaLadder Phase 0 spike — items 1 & 2 (Base fork) ===');
+  c.h('=== AquaStack Phase 0 spike — items 1 & 2 (Base fork) ===');
   const [bn, cid] = [await pub.getBlockNumber(), await pub.getChainId()];
   c.info(`RPC ${RPC}  chainId ${cid}  block ${bn}`);
   if (cid !== CHAIN_ID) throw new Error('not a Base fork');

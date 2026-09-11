@@ -21,7 +21,7 @@ const ROUNDS = 4;
 const SWAP = 5n * 10n ** 6n; // aTokens per leg of a round
 
 async function main() {
-  log.h('=== AquaLadder demo seed ===');
+  log.h('=== AquaStack demo seed ===');
   log.info(`RPC block ${await pub.getBlockNumber()} · store ${store ? 'ready' : '?'}`);
 
   // 1. open a position with a balanced rule (won't auto-unwind on small wobble)
