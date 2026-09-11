@@ -175,19 +175,13 @@ export default function Home() {
             liquidity at the same time, with an automated rule that exits the position when the
             peg breaks.
           </p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-9">
             <Link
-              href="/app"
+              href="/docs"
               className="bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
             >
-              Open the app
+              Docs
             </Link>
-            <a
-              href="#how"
-              className="border border-white/20 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white/40"
-            >
-              How it works
-            </a>
           </div>
         </div>
       </header>
@@ -195,9 +189,12 @@ export default function Home() {
       {/* ── How it works ─────────────────────────────────────── */}
       <section id="how" className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
-          <p className="mb-3 text-xs font-semibold tracking-[0.2em]" style={{ color: ACCENT }}>
+          <span
+            className="mb-5 inline-block bg-black px-3 py-1.5 text-xs font-semibold tracking-[0.2em]"
+            style={{ color: ACCENT }}
+          >
             HOW IT WORKS
-          </p>
+          </span>
           <h2 className="mb-14 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
             The same aToken keeps earning while it backs swaps.
           </h2>

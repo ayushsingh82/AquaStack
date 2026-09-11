@@ -82,7 +82,7 @@ export function PositionsList() {
       )}
 
       {isConnected && rows && rows.length > 0 && (
-        <div className="mt-8 divide-y divide-white/10 border-y border-white/15">
+        <div className="mt-8 space-y-2">
           {rows.map(({ record, pos, result, error }) => {
             const s = STATUS[record.status] ?? STATUS.active;
             const principal = record.shippedPrincipalA + record.shippedPrincipalB;
@@ -91,7 +91,7 @@ export function PositionsList() {
               <Link
                 key={record.strategyHash}
                 href={`/app/position/${record.strategyHash}`}
-                className="flex flex-col gap-3 py-4 transition-colors hover:bg-white/[0.02] sm:flex-row sm:items-center sm:gap-6"
+                className="flex flex-col gap-3 bg-[#151515] px-5 py-4 transition-colors hover:bg-[#1c1c1c] sm:flex-row sm:items-center sm:gap-6"
               >
                 <span
                   className="w-fit border px-2 py-0.5 text-[11px]"

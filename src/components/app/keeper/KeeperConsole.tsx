@@ -103,7 +103,7 @@ export function KeeperConsole() {
       </div>
 
       {/* ── Signer status (task 22) ── */}
-      <div className="mt-5 space-y-1.5 border border-white/15 px-4 py-3 text-xs">
+      <div className="mt-5 space-y-1.5 bg-[#151515] px-4 py-3 text-xs">
         {signer == null ? (
           <span className="text-neutral-600">Checking keeper signer…</span>
         ) : (
@@ -143,10 +143,10 @@ export function KeeperConsole() {
         )}
 
         {verdicts && verdicts.length > 0 && (
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 overflow-x-auto bg-[#151515] px-4 py-3">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs text-neutral-600">
-                <tr className="border-b border-white/15">
+                <tr className="border-b border-white/10">
                   <th className="py-2 pr-4 font-normal">Position</th>
                   <th className="py-2 pr-4 font-normal">Status</th>
                   <th className="py-2 pr-4 font-normal">Return</th>
@@ -218,9 +218,9 @@ export function KeeperConsole() {
         )}
 
         {runs && runs.length > 0 && (
-          <ol className="mt-4 space-y-4">
+          <ol className="mt-4 space-y-2">
             {runs.map((r) => (
-              <li key={r.at} className="border-l border-white/15 pl-4">
+              <li key={r.at} className="bg-[#151515] px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                   <span className="text-sm text-neutral-300">
                     {r.ticked === 0 ? 'No positions ticked' : `Ticked ${r.ticked} position${r.ticked > 1 ? 's' : ''}`}

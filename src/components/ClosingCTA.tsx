@@ -42,19 +42,16 @@ export default function ClosingCTA() {
         <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/app"
-            className="px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-90"
-            style={{ backgroundColor: ACCENT }}
+            className="border border-transparent bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
           >
             Open the app
           </Link>
-          <a
-            href="https://github.com/ayushsingh82/AquaStack"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href="/docs"
             className="border border-white/25 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white/50"
           >
-            Read the code
-          </a>
+            Docs
+          </Link>
         </div>
       </div>
     </section>
