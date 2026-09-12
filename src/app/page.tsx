@@ -145,14 +145,14 @@ const FEATURES = [
 const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO)[] }[] = [
   {
     tag: 'deposit',
-    big: '1,000 USDC',
-    small: 'you deposit, one signature',
+    big: '500 USDC\n+ 500 USDT',
+    small: 'you bring both legs yourself — no swap needed',
     icons: ['usdc'],
   },
   {
-    tag: 'split + ship',
-    big: '≈ 495 aUSDC\n+ 495 aUSDbC',
-    small: 'half swapped, both legs supplied to Aave v3, then shipped to 1inch Aqua',
+    tag: 'supply + ship',
+    big: '500 aUSDC\n+ 500 aUSDbC',
+    small: 'both legs supplied to Aave v3, then shipped to 1inch Aqua',
     icons: ['aave', 'aqua'],
   },
   {
@@ -163,8 +163,8 @@ const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO
   },
   {
     tag: 'protected exit',
-    big: '502.05 USDC',
-    small: 'keeper docks the Aqua position and withdraws from Aave: principal + yield, back in your wallet',
+    big: '501.80 USDC\n+ 501.80 USDT',
+    small: 'keeper docks the Aqua position and withdraws from Aave — principal + yield, back in your wallet',
     icons: ['usdc'],
   },
 ];
@@ -389,11 +389,6 @@ export default function Home() {
               </li>
             ))}
           </ol>
-
-          <p className="mt-6 text-xs text-neutral-600">
-            Numbers from <span className="font-mono text-neutral-400">npm run e2e:testnet</span>,
-            executed against real Aave v3 on Base Sepolia with our own-deployed Aqua stack.
-          </p>
         </div>
       </section>
 
@@ -456,7 +451,14 @@ export default function Home() {
               ].map(([label, addr]) => (
                 <div key={label} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:gap-4">
                   <span className="min-w-[10rem] text-neutral-500">{label}</span>
-                  <span className="break-all text-neutral-300">{addr}</span>
+                  <a
+                    href={`https://sepolia.basescan.org/address/${addr}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-neutral-300 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white hover:decoration-white/50"
+                  >
+                    {addr}
+                  </a>
                 </div>
               ))}
             </div>
