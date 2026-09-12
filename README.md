@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo.svg" width="96" height="96" alt="AquaStack logo" />
+  <img src="public/logo.svg" width="132" height="132" alt="AquaStack logo" />
 </p>
 
 # AquaStack
