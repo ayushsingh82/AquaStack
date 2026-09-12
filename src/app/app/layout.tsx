@@ -5,6 +5,7 @@ import { ToastProvider } from '@/components/app/Toast';
 import { AppBackground } from '@/components/app/AppBackground';
 import { ConnectButton } from '@/components/app/ConnectButton';
 import { NavLink } from '@/components/app/NavLink';
+import { Logo } from '@/components/Logo';
 
 const NAV = [
   { href: '/app', label: 'Positions' },
@@ -22,8 +23,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
               <Link
                 href="/"
-                className="shrink-0 text-xs font-semibold tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]"
+                className="flex shrink-0 items-center gap-2 text-xs font-semibold tracking-[0.18em] sm:gap-2.5 sm:text-sm sm:tracking-[0.22em]"
               >
+                <Logo size={22} />
                 AQUASTACK
               </Link>
               <nav className="hidden items-center gap-8 md:flex">

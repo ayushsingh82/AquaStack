@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import DocsNav from './DocsNav';
+import DocsShell, { type DocsNavGroup } from './DocsShell';
+import { Logo } from '@/components/Logo';
 
 const ACCENT = '#FD5299';
 
@@ -10,18 +11,16 @@ export const metadata: Metadata = {
 };
 
 function Section({
-  id,
   n,
   title,
   children,
 }: {
-  id: string;
   n: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 border-t border-white/10 py-12 first:border-t-0 first:pt-0">
+    <section>
       <div className="flex items-baseline gap-3">
         <span className="font-mono text-xs" style={{ color: ACCENT }}>
           {n}
@@ -66,56 +65,121 @@ function Table({ head, rows }: { head: string[]; rows: (string | React.ReactNode
   );
 }
 
-const NAV = [
-  ['what', 'What is AquaStack'],
-  ['how', 'How it works'],
-  ['bps', 'bps'],
-  ['deposit', 'Deposit'],
-  ['position', 'Position page'],
-  ['rule', 'The rule'],
-  ['keeper', 'Keeper'],
-  ['unwind', 'Unwind'],
-  ['contracts', 'Contracts'],
-] as const;
+const NAV_GROUPS: DocsNavGroup[] = [
+  {
+    label: 'Introduction',
+    items: [
+      ['what', 'What is AquaStack'],
+      ['how', 'How it works'],
+      ['bps', 'bps'],
+    ],
+  },
+  {
+    label: 'Using the app',
+    items: [
+      ['deposit', 'Deposit wizard'],
+      ['position', 'Position page'],
+      ['rule', 'The rule'],
+      ['keeper', 'Keeper'],
+      ['unwind', 'Unwind'],
+    ],
+  },
+  {
+    label: 'Reference',
+    items: [['contracts', 'Contracts']],
+  },
+];
 
-export default function DocsPage() {
+const ADMONITION_STYLE = {
+  note: { label: 'NOTE', color: '#60a5fa' },
+  tip: { label: 'TIP', color: '#4ade80' },
+  warning: { label: 'CAUTION', color: '#fbbf24' },
+} as const;
+
+function Admonition({
+  kind = 'note',
+  children,
+}: {
+  kind?: keyof typeof ADMONITION_STYLE;
+  children: React.ReactNode;
+}) {
+  const { label, color } = ADMONITION_STYLE[kind];
   return (
-    <main className="flex flex-1 flex-col bg-black text-white">
-      <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
-            AQUASTACK
-          </Link>
-          <Link
-            href="/app"
-            className="bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
-          >
-            Open app
-          </Link>
-        </div>
-      </nav>
+    <div className="border-l-2 bg-[#151515] py-3 pl-4 pr-4" style={{ borderColor: color }}>
+      <p className="text-[10px] font-semibold tracking-[0.2em]" style={{ color }}>
+        {label}
+      </p>
+      <div className="mt-1.5 text-sm leading-6 text-neutral-300">{children}</div>
+    </div>
+  );
+}
 
-      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-10 px-6 py-14 lg:grid-cols-[220px_1fr]">
-        {/* ── Side nav ── */}
-        <aside className="hidden lg:block">
-          <DocsNav items={NAV} />
-        </aside>
+function StepTimeline({ steps }: { steps: { title: React.ReactNode; detail: string }[] }) {
+  return (
+    <div className="bg-[#151515] p-6 sm:p-8">
+      <ol className="relative flex flex-col gap-6 sm:flex-row sm:gap-0">
+        {/* connecting line — vertical on mobile, horizontal on sm+ */}
+        <div
+          className="absolute left-4 top-2 bottom-2 w-px bg-white/10 sm:left-8 sm:right-8 sm:top-4 sm:bottom-auto sm:h-px sm:w-auto"
+          aria-hidden
+        />
+        {steps.map((s, i) => (
+          <li key={i} className="relative flex flex-1 items-start gap-4 sm:flex-col sm:items-center sm:text-center">
+            <span
+              className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-black font-mono text-[11px]"
+              style={{ borderColor: ACCENT, color: ACCENT }}
+            >
+              {i + 1}
+            </span>
+            <div className="sm:mt-3 sm:max-w-[140px]">
+              <p className="text-sm font-medium text-white">{s.title}</p>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">{s.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
-        {/* ── Content ── */}
-        <div className="min-w-0 lg:border-l lg:border-white/10 lg:pl-10">
-          <p className="text-xs font-semibold tracking-[0.2em]" style={{ color: ACCENT }}>
-            DOCS
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            What AquaStack is, and what every number means.
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400 sm:text-base">
-            This page explains the protocol from first principles, then walks through every field on the
-            app screen by screen — what it reads, where the number comes from on-chain, and what &quot;bps&quot;
-            means when you see it.
-          </p>
+function FlowDiagram() {
+  return (
+    <StepTimeline
+      steps={[
+        { title: 'Deposit', detail: 'USDC + USDT into Aave v3' },
+        { title: 'Supply + ship', detail: 'aTokens minted, then registered with Aqua' },
+        { title: 'Earn, twice', detail: 'Aave APY rebases · Aqua spread on swaps' },
+        { title: 'Rule watched', detail: 'Keeper checks peg / P&L every pass' },
+        { title: 'Protected exit', detail: 'dock() + withdraw() on trigger' },
+      ]}
+    />
+  );
+}
 
-          <Section id="what" n="01" title="What is AquaStack">
+function UnwindDiagram() {
+  return (
+    <StepTimeline
+      steps={[
+        {
+          title: <code className="text-neutral-100">dock()</code>,
+          detail: 'Aqua stops treating the position as live liquidity',
+        },
+        {
+          title: <code className="text-neutral-100">repayWithATokens</code>,
+          detail: 'only if a swap left one leg borrowed',
+        },
+        {
+          title: <code className="text-neutral-100">withdraw()</code>,
+          detail: 'both legs, back to plain USDC / USDT',
+        },
+      ]}
+    />
+  );
+}
+
+const CONTENT: Record<string, React.ReactNode> = {
+  what: (
+    <Section n="01" title="What is AquaStack">
             <p>
               In normal DeFi, a dollar does one job: it&apos;s lent on Aave, <em>or</em> it&apos;s LP&apos;d on a DEX.
               AquaStack makes one stablecoin deposit do both at once, non-custodially, with an automated
@@ -131,9 +195,16 @@ export default function DocsPage() {
               same balance as live swap liquidity. Nothing is double-spent — Aqua can only ever pull up to
               the registered virtual balance.
             </p>
-          </Section>
-
-          <Section id="how" n="02" title="How it works">
+            <Admonition kind="note">
+              This is the core trick the whole app is built around: Aqua only ever <em>reads</em> a virtual
+              balance and pulls real tokens at swap time — it never needs custody, so the same tokens are
+              free to be an Aave position at the same time.
+            </Admonition>
+    </Section>
+  ),
+  how: (
+    <Section n="02" title="How it works">
+            <FlowDiagram />
             <Card>
               <ol className="space-y-3">
                 <li>
@@ -159,9 +230,14 @@ export default function DocsPage() {
                 </li>
               </ol>
             </Card>
-          </Section>
-
-          <Section id="bps" n="03" title="bps">
+            <Admonition kind="tip">
+              Steps 1–2 happen once, at deposit. Step 3 runs passively forever. Step 4 is the only one that
+              needs anything watching — that&apos;s the keeper&apos;s whole job.
+            </Admonition>
+    </Section>
+  ),
+  bps: (
+    <Section n="03" title="bps">
             <p>
               <strong className="text-white">bps = basis points.</strong> 1 bps = 0.01%. 100 bps = 1%. Used
               everywhere in the app instead of raw percentages because the moves being measured are small
@@ -177,9 +253,10 @@ export default function DocsPage() {
                 ['500', '5%'],
               ]}
             />
-          </Section>
-
-          <Section id="deposit" n="04" title="Deposit wizard">
+    </Section>
+  ),
+  deposit: (
+    <Section n="04" title="Deposit wizard">
             <p>
               <strong className="text-white">Peg band</strong> sets how tightly the pegged AMM concentrates
               liquidity around 1:1 — a property of the strategy itself, fixed at deposit time.
@@ -192,9 +269,10 @@ export default function DocsPage() {
                 ['Wide · ±2%', 'Only reacts to a real depeg, ignores noise.'],
               ]}
             />
-          </Section>
-
-          <Section id="position" n="05" title="Position page">
+    </Section>
+  ),
+  position: (
+    <Section n="05" title="Position page">
             <p>
               <strong className="text-white">Balances panel</strong> — for each leg: wallet balance (your
               actual on-chain aToken, rebasing on its own as Aave interest accrues), virtual balance (the
@@ -214,9 +292,10 @@ export default function DocsPage() {
               threshold), quote a→b / b→a (the live swap rate in each direction, ~1.00000 when healthy), and
               swap count.
             </p>
-          </Section>
-
-          <Section id="rule" n="06" title="The rule">
+    </Section>
+  ),
+  rule: (
+    <Section n="06" title="The rule">
             <p>Every evaluation checks all four thresholds; only the fields you set are active.</p>
             <Table
               head={['Field', 'Meaning']}
@@ -236,9 +315,10 @@ export default function DocsPage() {
                 ['Alert only', '50 bps', '—', '—', 'no'],
               ]}
             />
-          </Section>
-
-          <Section id="keeper" n="07" title="Keeper">
+    </Section>
+  ),
+  keeper: (
+    <Section n="07" title="Keeper">
             <p>
               A pass over every active/alerting position: read on-chain state → evaluate the rule → hold,
               alert, or unwind. Meant to run unattended on a schedule — this is what makes the exit real
@@ -263,25 +343,22 @@ export default function DocsPage() {
               Aave <code className="text-neutral-200">withdraw()</code>. The keeper never holds your keys or
               custody of funds.
             </p>
-          </Section>
-
-          <Section id="unwind" n="08" title="Unwind">
-            <p>Three steps, in order, whether triggered by you or the keeper:</p>
-            <ol className="list-decimal space-y-1 pl-5">
-              <li>
-                <code className="text-neutral-200">dock()</code> — Aqua stops treating the strategy as live
-                liquidity, freeing the virtual balance.
-              </li>
-              <li>
-                Repay any variable debt (only if a swap direction left one leg borrowed) via{' '}
-                <code className="text-neutral-200">repayWithATokens</code>.
-              </li>
-              <li>Withdraw both legs from Aave back to plain USDC / USDT in your wallet.</li>
-            </ol>
-            <p>Principal, accrued Aave yield, and any Aqua spread all land back in one shot.</p>
-          </Section>
-
-          <Section id="contracts" n="09" title="Contracts — Base Sepolia (84532)">
+            <Admonition kind="warning">
+              A session signer can only ever call <code className="text-neutral-200">dock()</code> and{' '}
+              <code className="text-neutral-200">withdraw()</code> for the one position it&apos;s scoped to —
+              it cannot move funds anywhere else, and it&apos;s revocable at any time from the position page.
+            </Admonition>
+    </Section>
+  ),
+  unwind: (
+    <Section n="08" title="Unwind">
+      <p>Three steps, in order, whether triggered by you or the keeper:</p>
+      <UnwindDiagram />
+      <p>Principal, accrued Aave yield, and any Aqua spread all land back in one shot.</p>
+    </Section>
+  ),
+  contracts: (
+    <Section n="09" title="Contracts — Base Sepolia (84532)">
             <Table
               head={['Contract', 'Address']}
               rows={[
@@ -299,8 +376,44 @@ export default function DocsPage() {
               and <code className="text-neutral-300">1inch/aqua@main</code> — allowed under the 1inch bounty
               rules. Everything above is exercised end-to-end against these live contracts.
             </p>
-          </Section>
+    </Section>
+  ),
+};
+
+export default function DocsPage() {
+  return (
+    <main className="flex flex-1 flex-col bg-black text-white">
+      <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur">
+        <div className="flex w-full items-center justify-between px-6 py-4 lg:px-12">
+          <Link href="/" className="flex items-center gap-2.5 text-sm font-semibold tracking-[0.22em]">
+            <Logo size={26} />
+            AQUASTACK
+          </Link>
+          <Link
+            href="/app"
+            className="bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+          >
+            Open app
+          </Link>
         </div>
+      </nav>
+
+      <div className="px-6 pt-14 lg:px-12">
+        <p className="text-xs font-semibold tracking-[0.2em]" style={{ color: ACCENT }}>
+          DOCS
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+          What AquaStack is, and what every number means.
+        </h1>
+        <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400 sm:text-base">
+          This page explains the protocol from first principles, then walks through every field on the app
+          screen by screen: what it reads, where the number comes from on-chain, and what &quot;bps&quot; means
+          when you see it.
+        </p>
+      </div>
+
+      <div className="grid w-full flex-1 gap-10 px-6 py-10 pb-14 lg:grid-cols-[240px_1fr] lg:px-12 xl:grid-cols-[260px_1fr]">
+        <DocsShell groups={NAV_GROUPS} content={CONTENT} />
       </div>
     </main>
   );

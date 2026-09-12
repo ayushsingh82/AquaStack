@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/logo.svg" width="96" height="96" alt="AquaStack logo" />
+</p>
+
 # AquaStack
 
 **Deposit USDC once. The same balance earns Aave lending yield *and* provides
@@ -246,22 +250,6 @@ Deployed addresses + Basescan links + sample live transactions are in
 - **`makerFeeBps` is 0.** `withFeeTokenIn()` on the pegged strategy makes the
   on-chain `swap()` revert (quote still works); the LP earns from the band
   spread instead.
-
----
-
-## Status
-
-| Phase | Scope | State |
-| --- | --- | --- |
-| 0 | De-risk spike — Aqua + pegged strategy + aToken rebase + dock guards | ✅ |
-| 1 | Integration library — `deposit` · `strategy` · `position` · `unwind` | ✅ Sepolia e2e |
-| 2 | Rule engine + store — `evaluate` · `RuleStore` | ✅ unit-tested |
-| 3 | Keeper — `run` · `tick` · signer · notifier | ✅ Sepolia e2e (auto-unwind) |
-| 4 | Web app — landing, deposit wizard, dashboard, keeper console, demo scripts | ✅ builds; deposit/keeper flows run on a Sepolia fork |
-| 5 | Base Sepolia — redeploy Aqua/SwapVM, 2-token deposit, Privy session signer | ✅ live on real Base Sepolia (`npm run e2e:live`); Privy session signer + Vercel in progress |
-
-Working notes and findings: [`workdone.md`](./workdone.md).
-Build plan: [`plan.md`](./plan.md).
 
 ---
 

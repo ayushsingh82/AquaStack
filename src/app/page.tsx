@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CursorWave from '@/components/CursorWave';
 import LiquidityFlow from '@/components/LiquidityFlow';
 import ClosingCTA from '@/components/ClosingCTA';
+import { Logo } from '@/components/Logo';
 
 const ACCENT = '#FD5299';
 
@@ -142,7 +143,8 @@ export default function Home() {
       {/* ── Navbar ───────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-black/70 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-sm font-semibold tracking-[0.22em]">
+          <Link href="/" className="flex items-center gap-2.5 text-sm font-semibold tracking-[0.22em]">
+            <Logo size={26} />
             AQUASTACK
           </Link>
           <Link
@@ -363,7 +365,10 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 sm:grid-cols-4">
             <div className="sm:col-span-2">
-              <p className="text-sm font-semibold tracking-[0.22em]">AQUASTACK</p>
+              <p className="flex items-center gap-2.5 text-sm font-semibold tracking-[0.22em]">
+                <Logo size={20} />
+                AQUASTACK
+              </p>
               <p className="mt-3 max-w-sm text-sm text-neutral-500">
                 One stablecoin deposit that earns Aave lending yield and provides 1inch Aqua
                 liquidity at once, with an automated protective exit.
