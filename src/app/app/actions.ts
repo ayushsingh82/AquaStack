@@ -10,7 +10,9 @@ import { evaluateRecord } from '@/lib/server/api';
 import { dealErc20 } from '@/lib/server/faucet';
 import { toClient } from '@/lib/serialize';
 import { buildDeposit, type DepositInput } from '@/lib/aqua/deposit';
-import { CHAIN_ID, USDC, USDbC, aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI } from '@/lib/aqua/constants';
+import {
+  CHAIN_ID, USDC, USDbC, aUSDC, aUSDbC, AQUA, AQUA_SWAP_VM_ROUTER, AQUA_ABI, ERC20_ABI,
+} from '@/lib/aqua/constants';
 import { buildUnwind } from '@/lib/aqua/unwind';
 import { runKeeperOnce, consoleNotifier, type KeeperDeps } from '@/lib/keeper';
 import type { PositionRecord, Rule } from '@/lib/rules';
@@ -41,14 +43,29 @@ export async function prepareDepositAction(input: {
     usdbcAmount: input.usdbcAmount ? BigInt(input.usdbcAmount) : undefined,
     pegBand: input.pegBand,
   });
+
+  // Aqua approvals are one-time (MAX_UINT256) — skip them on repeat deposits
+  // once a prior deposit already left the allowance maxed out.
+  const ALREADY_APPROVED = 2n ** 200n; // any allowance this large only ever came from our own max-approve
+  const [aUsdcAllowance, aUsdbcAllowance] = await Promise.all([
+    publicClient.readContract({ address: aUSDC, abi: ERC20_ABI, functionName: 'allowance', args: [input.user, AQUA] }),
+    publicClient.readContract({ address: aUSDbC, abi: ERC20_ABI, functionName: 'allowance', args: [input.user, AQUA] }),
+  ]);
+  const steps = plan.steps.filter((s) => {
+    if (s.label === 'Approve aUSDC for Aqua') return aUsdcAllowance < ALREADY_APPROVED;
+    if (s.label === 'Approve aUSDbC for Aqua') return aUsdbcAllowance < ALREADY_APPROVED;
+    return true;
+  });
+  const shipStepIndex = steps.findIndex((s) => s.label === 'Ship strategy to Aqua');
+
   return toClient({
     strategyHash: plan.strategyHash,
     strategyBytes: plan.strategy.strategyBytes,
     salt: plan.strategy.salt,
     pegBand: plan.strategy.pegBand,
     planned: plan.planned,
-    steps: plan.steps,
-    shipStepIndex: plan.shipStepIndex,
+    steps,
+    shipStepIndex,
   });
 }
 

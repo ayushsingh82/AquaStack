@@ -39,10 +39,58 @@ function ProtocolTag({ glyph, label }: { glyph: keyof typeof LOGO; label: string
   );
 }
 
+function IconSplit() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3v6" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 9c0 4-5 4-5 8M12 9c0 4 5 4 5 8" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="3" r="1.6" fill={ACCENT} />
+      <circle cx="7" cy="19" r="1.6" fill={ACCENT} />
+      <circle cx="17" cy="19" r="1.6" fill={ACCENT} />
+    </svg>
+  );
+}
+
+function IconAlertExit() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3 L21.5 20 H2.5 Z" stroke={ACCENT} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M12 9.5v5" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="17.3" r="1.1" fill={ACCENT} />
+    </svg>
+  );
+}
+
+function IconWalletLock() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="2.5" y="6" width="19" height="14" rx="1.5" stroke={ACCENT} strokeWidth="1.8" />
+      <path d="M2.5 10h19" stroke={ACCENT} strokeWidth="1.8" />
+      <rect x="14.5" y="12.5" width="6" height="5" rx="1" fill="black" stroke={ACCENT} strokeWidth="1.5" />
+      <path d="M16 12.5v-1.2a1.5 1.5 0 0 1 3 0v1.2" stroke={ACCENT} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function IconDroplet() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 2 C12 2 4 12 4 16.5 a8 8 0 0 0 16 0 C20 12 12 2 12 2Z"
+        stroke={ACCENT}
+        strokeWidth="1.8"
+        fill="none"
+      />
+      <path d="M8.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke={ACCENT} strokeWidth="1.4" strokeLinecap="round" opacity="0.6" />
+    </svg>
+  );
+}
+
 const FEATURES = [
   {
     n: '01',
     corner: 'tl',
+    Icon: IconSplit,
     title: 'One balance, two jobs',
     body: (
       <>
@@ -56,6 +104,7 @@ const FEATURES = [
   {
     n: '02',
     corner: 'tr',
+    Icon: IconAlertExit,
     title: 'Auto-exit on depeg',
     body: (
       <>
@@ -68,6 +117,7 @@ const FEATURES = [
   {
     n: '03',
     corner: 'bl',
+    Icon: IconWalletLock,
     title: 'Non-custodial by design',
     body: (
       <>
@@ -80,6 +130,7 @@ const FEATURES = [
   {
     n: '04',
     corner: 'br',
+    Icon: IconDroplet,
     title: 'Built on 1inch Aqua',
     body: (
       <>
@@ -118,21 +169,69 @@ const FLOW: { big: string; small: string; tag: string; icons: (keyof typeof LOGO
   },
 ];
 
+function IconWindow() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="2.5" y="4" width="19" height="16" rx="1.5" stroke={ACCENT} strokeWidth="1.8" />
+      <path d="M2.5 8.5h19" stroke={ACCENT} strokeWidth="1.8" />
+      <circle cx="5.5" cy="6.2" r="0.7" fill={ACCENT} />
+      <circle cx="7.5" cy="6.2" r="0.7" fill={ACCENT} />
+    </svg>
+  );
+}
+
+function IconLink() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="15" r="4.2" stroke={ACCENT} strokeWidth="1.8" />
+      <circle cx="15" cy="9" r="4.2" stroke="white" strokeWidth="1.8" opacity="0.5" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3 L20 6.5 V12 c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6.5 Z"
+        stroke={ACCENT}
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 12 L11 14.5 L15.5 9.5" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconClock() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12.5" r="9" stroke={ACCENT} strokeWidth="1.8" />
+      <path d="M12 7.5v5l3.5 2" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 2.5h6" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const LAYERS = [
   {
     name: 'Interface',
+    Icon: IconWindow,
     desc: 'Deposit wizard, position dashboard, keeper console. Every chain read and tx-plan builder runs server-side; the wallet is Privy.',
   },
   {
     name: 'Aqua integration',
+    Icon: IconLink,
     desc: 'Builds the deposit plan, the pegged aUSDC/aUSDT strategy, the live position read model, and the unwind plan.',
   },
   {
     name: 'Protective rules',
+    Icon: IconShield,
     desc: 'A pure evaluator (peg deviation, take-profit, stop-loss, max-drawdown → hold · alert · unwind) over a per-position rule store.',
   },
   {
     name: 'Keeper',
+    Icon: IconClock,
     desc: 'A cron pass over every active position: read state → evaluate the rule → act through a session signer while the user is offline.',
   },
 ];
@@ -202,17 +301,24 @@ export default function Home() {
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <div key={f.n} className="relative bg-[#151515] p-8">
+              <div key={f.n} className="relative overflow-hidden bg-[#151515] p-8">
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute h-6 w-6 ${CORNER[f.corner]}`}
                   style={{ borderColor: ACCENT }}
                 />
-                <span className="font-mono text-xs" style={{ color: ACCENT }}>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -right-2 -top-6 select-none font-mono text-8xl font-bold"
+                  style={{ color: ACCENT, opacity: 0.08 }}
+                >
                   {f.n}
                 </span>
-                <h3 className="mt-3 text-lg font-medium">{f.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-neutral-400">{f.body}</p>
+                <div className="relative flex h-10 w-10 items-center justify-center border border-white/10 bg-black">
+                  <f.Icon />
+                </div>
+                <h3 className="relative mt-4 text-lg font-medium">{f.title}</h3>
+                <p className="relative mt-3 text-sm leading-6 text-neutral-400">{f.body}</p>
               </div>
             ))}
           </div>
@@ -298,24 +404,25 @@ export default function Home() {
             ARCHITECTURE
           </p>
           <h2 className="mb-16 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            Four layers. End-to-end tested on Base Sepolia.
+            Four layers, each doing one job.
           </h2>
 
           {/* the four layers */}
           <div className="grid gap-4 sm:grid-cols-2">
             {LAYERS.map((l, i) => (
-              <div key={l.name} className="relative bg-[#151515] p-6">
+              <div key={l.name} className="relative flex min-h-[200px] flex-col bg-[#151515] p-7">
                 <span
                   aria-hidden
                   className="pointer-events-none absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2"
                   style={{ borderColor: ACCENT }}
                 />
-                <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-xs" style={{ color: ACCENT }}>
-                    0{i + 1}
-                  </span>
-                  <h3 className="text-base font-medium text-white">{l.name}</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center border border-white/10 bg-black">
+                    <l.Icon />
+                  </div>
+                  <span className="font-mono text-xs text-neutral-600">0{i + 1}</span>
                 </div>
+                <h3 className="mt-4 text-base font-medium text-white">{l.name}</h3>
                 <p className="mt-3 text-sm leading-6 text-neutral-400">{l.desc}</p>
               </div>
             ))}

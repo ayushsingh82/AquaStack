@@ -82,41 +82,59 @@ export function PositionsList() {
       )}
 
       {isConnected && rows && rows.length > 0 && (
-        <div className="mt-8 space-y-2">
-          {rows.map(({ record, pos, result, error }) => {
-            const s = STATUS[record.status] ?? STATUS.active;
-            const principal = record.shippedPrincipalA + record.shippedPrincipalB;
-            const ret = result?.metrics.totalReturnBps;
+        <div className="mt-8 space-y-8">
+          {(() => {
+            const open = rows.filter((r) => r.record.status !== 'unwound');
+            const closed = rows.filter((r) => r.record.status === 'unwound');
             return (
-              <Link
-                key={record.strategyHash}
-                href={`/app/position/${record.strategyHash}`}
-                className="flex flex-col gap-3 bg-[#151515] px-5 py-4 transition-colors hover:bg-[#1c1c1c] sm:flex-row sm:items-center sm:gap-6"
-              >
-                <span
-                  className="w-fit border px-2 py-0.5 text-[11px]"
-                  style={{ borderColor: s.color, color: s.color }}
-                >
-                  {s.label}
-                </span>
-                <span className="font-mono text-xs text-neutral-500">{shortHash(record.strategyHash)}</span>
-                <span className="text-sm text-neutral-300">${usd(principal)} principal</span>
-                <span className="text-sm">
-                  {ret != null ? (
-                    <span style={{ color: ret >= 0 ? '#4ade80' : '#f87171' }}>{bpsPct(ret, true)}</span>
-                  ) : (
-                    <span className="text-neutral-600">{error ? 'read error' : '—'}</span>
-                  )}
-                </span>
-                <span className="text-xs text-neutral-500">
-                  {pos ? `peg ${pos.pegDeviationBps}bps` : ''}
-                </span>
-                <span className="text-xs text-neutral-600 sm:ml-auto">{timeAgo(record.createdAt)}</span>
-              </Link>
+              <>
+                {open.length > 0 && <PositionGroup label="ACTIVE" rows={open} />}
+                {closed.length > 0 && <PositionGroup label="UNWOUND" rows={closed} muted />}
+              </>
             );
-          })}
+          })()}
         </div>
       )}
+    </div>
+  );
+}
+
+function PositionGroup({ label, rows, muted = false }: { label: string; rows: Row[]; muted?: boolean }) {
+  return (
+    <div>
+      <p className="mb-2.5 text-[11px] font-semibold tracking-[0.2em] text-neutral-600">{label}</p>
+      <div className="space-y-2">
+        {rows.map(({ record, pos, result, error }) => {
+          const s = STATUS[record.status] ?? STATUS.active;
+          const principal = record.shippedPrincipalA + record.shippedPrincipalB;
+          const ret = result?.metrics.totalReturnBps;
+          return (
+            <Link
+              key={record.strategyHash}
+              href={`/app/position/${record.strategyHash}`}
+              className={`flex flex-col gap-3 bg-[#151515] px-5 py-4 transition-colors hover:bg-[#1c1c1c] sm:flex-row sm:items-center sm:gap-6 ${muted ? 'opacity-60' : ''}`}
+            >
+              <span
+                className="w-fit border px-2 py-0.5 text-[11px]"
+                style={{ borderColor: s.color, color: s.color }}
+              >
+                {s.label}
+              </span>
+              <span className="font-mono text-xs text-neutral-500">{shortHash(record.strategyHash)}</span>
+              <span className="text-sm text-neutral-300">${usd(principal)} principal</span>
+              <span className="text-sm">
+                {ret != null ? (
+                  <span style={{ color: ret >= 0 ? '#4ade80' : '#f87171' }}>{bpsPct(ret, true)}</span>
+                ) : (
+                  <span className="text-neutral-600">{error ? 'read error' : '—'}</span>
+                )}
+              </span>
+              <span className="text-xs text-neutral-500">{pos ? `peg ${pos.pegDeviationBps}bps` : ''}</span>
+              <span className="text-xs text-neutral-600 sm:ml-auto">{timeAgo(record.createdAt)}</span>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

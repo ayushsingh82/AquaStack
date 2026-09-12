@@ -55,9 +55,14 @@ export default function LiquidityFlow() {
           {STEPS.map((s, i) => (
             <li
               key={s.k}
-              className="flex flex-col gap-1 border-white/10 p-5 sm:flex-row sm:items-baseline sm:gap-5 [&:not(:last-child)]:border-b"
+              className="flex flex-col gap-2 border-white/10 p-5 sm:flex-row sm:items-center sm:gap-5 [&:not(:last-child)]:border-b"
             >
-              <span className="w-6 font-mono text-xs text-neutral-500">{`0${i + 1}`}</span>
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border font-mono text-[11px]"
+                style={{ borderColor: ACCENT, color: ACCENT }}
+              >
+                {i + 1}
+              </span>
               <span className="min-w-[12rem] font-mono text-base" style={{ color: ACCENT }}>
                 {s.k}
               </span>
