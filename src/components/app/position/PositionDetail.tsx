@@ -177,7 +177,6 @@ export function PositionDetail({ hash }: { hash: Hex }) {
 
 function LegRow({ leg }: { leg: LegState }) {
   const sym = leg.aToken.toLowerCase() === aUSDC.toLowerCase() ? 'aUSDC' : 'aUSDbC';
-  const yieldAmt = leg.walletBalance > leg.virtualBalance ? leg.walletBalance - leg.virtualBalance : 0n;
   return (
     <div className="text-sm">
       <div className="flex items-baseline justify-between">
@@ -189,7 +188,7 @@ function LegRow({ leg }: { leg: LegState }) {
         <span>shipped ${usd(leg.shippedPrincipal)}</span>
       </div>
       <div className="mt-0.5 text-xs" style={{ color: ACCENT }}>
-        + ${usd(yieldAmt, 4)} accrued
+        + ${usd(leg.aaveYield, 4)} accrued (Aave interest)
       </div>
     </div>
   );
