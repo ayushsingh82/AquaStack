@@ -4,8 +4,8 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Hex } from 'viem';
 import { useAccount, useChainId, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi';
-import { aUSDC, aUSDbC, AAVE_POOL, USDC, USDbC, ACCENT } from '@/lib/addresses';
-import { ERC20_READ_ABI, AAVE_INDEX_ABI } from '@/lib/abis';
+import { AAVE_POOL, USDC, USDbC, ACCENT } from '@/lib/addresses';
+import { AAVE_INDEX_ABI } from '@/lib/abis';
 import { CHAIN_ID } from '@/lib/chain';
 import { fromClient } from '@/lib/serialize';
 import { prepareDepositAction, buildShipStepAction, recordDepositAction } from '@/app/app/actions';
@@ -100,17 +100,22 @@ export function DepositSign({
         markDone(i);
       }
 
-      setNote('Reading balances after supply…');
-      const [aA, aB, idxA, idxB, block] = await Promise.all([
-        client.readContract({ address: aUSDC, abi: ERC20_READ_ABI, functionName: 'balanceOf', args: [address] }),
-        client.readContract({ address: aUSDbC, abi: ERC20_READ_ABI, functionName: 'balanceOf', args: [address] }),
+      setNote('Reading Aave index…');
+      // Ship exactly the planned amount (known before any tx was sent) rather than
+      // re-reading balanceOf — a fresh read right after the supply txs confirm can
+      // land on a lagging RPC backend node and return a stale, understated balance.
+      const [idxA, idxB, block] = await Promise.all([
         client.readContract({ address: AAVE_POOL, abi: AAVE_INDEX_ABI, functionName: 'getReserveNormalizedIncome', args: [USDC] }),
         client.readContract({ address: AAVE_POOL, abi: AAVE_INDEX_ABI, functionName: 'getReserveNormalizedIncome', args: [USDbC] }),
         client.getBlockNumber(),
       ]);
 
       const ship = fromClient<{ to: Hex; data: Hex; value: bigint; shipped: bigint }>(
-        await buildShipStepAction(prep.strategyBytes, aA.toString(), aB.toString()),
+        await buildShipStepAction(
+          prep.strategyBytes,
+          prep.planned.shipAUsdc.toString(),
+          prep.planned.shipAUsdbc.toString(),
+        ),
       );
       if (doneRef.current < prep.shipStepIndex) {
         setNote('Signing: ship to Aqua');

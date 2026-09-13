@@ -17,11 +17,13 @@
  */
 import { encodeFunctionData, type Address, type Hex } from 'viem';
 import {
-  USDC, USDbC, aUSDC, aUSDbC, AAVE_POOL, AQUA, AQUA_SWAP_VM_ROUTER, MAX_UINT256,
+  USDC, USDbC, aUSDC, aUSDbC, AAVE_POOL, AQUA, AQUA_SWAP_VM_ROUTER, MAX_UINT256, CHAIN_ID,
   ERC20_ABI, AAVE_POOL_ABI, AQUA_ABI,
 } from './constants';
 import { buildPeggedStrategy, type BuiltStrategy, type PegBandPercent, type PegBandPreset } from './strategy';
 import type { TxStep, TokenLeg } from './types';
+
+const LEG_B_SYMBOL = CHAIN_ID === 84532 ? 'USDT' : 'USDbC';
 
 const USDC_LEG: TokenLeg = { token: USDC, aToken: aUSDC, decimals: 6 };
 const USDBC_LEG: TokenLeg = { token: USDbC, aToken: aUSDbC, decimals: 6 };
@@ -100,10 +102,10 @@ export function buildDeposit(input: DepositInput): DepositPlan {
   const steps: TxStep[] = [
     { label: 'Approve USDC for Aave', to: USDC, data: approve(USDC, AAVE_POOL, usdcAmount) },
     { label: 'Supply USDC to Aave', to: AAVE_POOL, data: supply(USDC, usdcAmount, user) },
-    { label: 'Approve leg B for Aave', to: USDbC, data: approve(USDbC, AAVE_POOL, usdbcAmount) },
-    { label: 'Supply leg B to Aave', to: AAVE_POOL, data: supply(USDbC, usdbcAmount, user) },
+    { label: `Approve ${LEG_B_SYMBOL} for Aave`, to: USDbC, data: approve(USDbC, AAVE_POOL, usdbcAmount) },
+    { label: `Supply ${LEG_B_SYMBOL} to Aave`, to: AAVE_POOL, data: supply(USDbC, usdbcAmount, user) },
     { label: 'Approve aUSDC for Aqua', to: aUSDC, data: approve(aUSDC, AQUA, MAX_UINT256) },
-    { label: 'Approve aUSDbC for Aqua', to: aUSDbC, data: approve(aUSDbC, AQUA, MAX_UINT256) },
+    { label: `Approve a${LEG_B_SYMBOL} for Aqua`, to: aUSDbC, data: approve(aUSDbC, AQUA, MAX_UINT256) },
     { label: 'Ship strategy to Aqua', to: AQUA, data: shipCalldata(strategy, shipAUsdc, shipAUsdbc) },
   ];
 

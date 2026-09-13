@@ -52,8 +52,8 @@ export async function prepareDepositAction(input: {
     publicClient.readContract({ address: aUSDbC, abi: ERC20_ABI, functionName: 'allowance', args: [input.user, AQUA] }),
   ]);
   const steps = plan.steps.filter((s) => {
-    if (s.label === 'Approve aUSDC for Aqua') return aUsdcAllowance < ALREADY_APPROVED;
-    if (s.label === 'Approve aUSDbC for Aqua') return aUsdbcAllowance < ALREADY_APPROVED;
+    if (s.to === aUSDC) return aUsdcAllowance < ALREADY_APPROVED;
+    if (s.to === aUSDbC) return aUsdbcAllowance < ALREADY_APPROVED;
     return true;
   });
   const shipStepIndex = steps.findIndex((s) => s.label === 'Ship strategy to Aqua');
