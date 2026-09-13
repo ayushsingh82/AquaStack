@@ -28,6 +28,19 @@ export interface UnwindInput {
   withdrawFromAave?: boolean;
   /** where withdrawn underlying goes. Default: `user`. */
   withdrawTo?: Address;
+  /**
+   * This position's own shipped principal + Aave index at ship time, per leg.
+   * When given, withdraw is scoped to exactly what this position is worth now
+   * (principal * indexNow / indexAtShip) instead of the wallet's entire aToken
+   * balance — critical when a wallet holds more than one position in the same
+   * asset, since Aave's MAX_UINT256 "withdraw all" convention doesn't know
+   * that other tokens in the wallet still back a different, still-active
+   * strategy. Omit only for a wallet known to hold a single position.
+   */
+  shippedPrincipalA?: bigint;
+  shippedPrincipalB?: bigint;
+  aaveIndexAtShipA?: bigint;
+  aaveIndexAtShipB?: bigint;
 }
 
 export interface UnwindPlan {
@@ -40,8 +53,8 @@ export interface UnwindPlan {
   status: PositionStatus;
 }
 
-const withdraw = (asset: Address, to: Address): Hex =>
-  encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: 'withdraw', args: [asset, MAX_UINT256, to] });
+const withdraw = (asset: Address, amount: bigint, to: Address): Hex =>
+  encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: 'withdraw', args: [asset, amount, to] });
 
 const repayWithATokens = (asset: Address): Hex =>
   encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: 'repayWithATokens', args: [asset, MAX_UINT256, 2n] });
@@ -64,6 +77,27 @@ async function variableDebt(client: PublicClient, asset: Address, user: Address)
   }
 }
 
+async function currentReserveIncome(client: PublicClient, asset: Address): Promise<bigint> {
+  return (await client.readContract({
+    address: AAVE_POOL, abi: AAVE_POOL_ABI, functionName: 'getReserveNormalizedIncome', args: [asset],
+  })) as bigint;
+}
+
+/** this position's current worth for one leg: principal * indexNow / indexAtShip.
+ *  Falls back to MAX_UINT256 (Aave's "withdraw everything" convention) only
+ *  when the caller doesn't know this position's principal/index — unsafe if
+ *  the wallet holds any other position in the same asset. */
+async function withdrawAmountFor(
+  client: PublicClient,
+  token: Address,
+  shippedPrincipal?: bigint,
+  aaveIndexAtShip?: bigint,
+): Promise<bigint> {
+  if (shippedPrincipal == null || aaveIndexAtShip == null || aaveIndexAtShip === 0n) return MAX_UINT256;
+  const indexNow = await currentReserveIncome(client, token);
+  return (shippedPrincipal * indexNow) / aaveIndexAtShip;
+}
+
 export async function buildUnwind(client: PublicClient, input: UnwindInput): Promise<UnwindPlan> {
   const { user, strategyHash, legA, legB } = input;
   const to = input.withdrawTo ?? user;
@@ -76,11 +110,16 @@ export async function buildUnwind(client: PublicClient, input: UnwindInput): Pro
 
   const withdrawSteps: TxStep[] = [];
   if (input.withdrawFromAave) {
-    for (const [name, leg] of [['leg A', legA], ['leg B', legB]] as const) {
+    const legs = [
+      ['leg A', legA, input.shippedPrincipalA, input.aaveIndexAtShipA] as const,
+      ['leg B', legB, input.shippedPrincipalB, input.aaveIndexAtShipB] as const,
+    ];
+    for (const [name, leg, shippedPrincipal, aaveIndexAtShip] of legs) {
       if ((await variableDebt(client, leg.token, user)) > 0n) {
         withdrawSteps.push({ label: `Repay ${name} debt (aToken)`, to: AAVE_POOL, data: repayWithATokens(leg.token) });
       }
-      withdrawSteps.push({ label: `Withdraw ${name} from Aave`, to: AAVE_POOL, data: withdraw(leg.token, to) });
+      const amount = await withdrawAmountFor(client, leg.token, shippedPrincipal, aaveIndexAtShip);
+      withdrawSteps.push({ label: `Withdraw ${name} from Aave`, to: AAVE_POOL, data: withdraw(leg.token, amount, to) });
     }
   }
 

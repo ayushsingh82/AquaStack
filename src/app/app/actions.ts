@@ -166,6 +166,10 @@ export async function prepareUnwindAction(user: Address, strategyHash: Hex, with
     legA: rec.legA,
     legB: rec.legB,
     withdrawFromAave,
+    shippedPrincipalA: rec.shippedPrincipalA,
+    shippedPrincipalB: rec.shippedPrincipalB,
+    aaveIndexAtShipA: rec.aaveIndexAtShipA,
+    aaveIndexAtShipB: rec.aaveIndexAtShipB,
   });
   return toClient(plan);
 }

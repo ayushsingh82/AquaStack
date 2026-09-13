@@ -69,6 +69,10 @@ export async function tickPosition(deps: KeeperDeps, record: PositionRecord): Pr
     legB: record.legB,
     withdrawFromAave: true,
     withdrawTo: record.user,
+    shippedPrincipalA: record.shippedPrincipalA,
+    shippedPrincipalB: record.shippedPrincipalB,
+    aaveIndexAtShipA: record.aaveIndexAtShipA,
+    aaveIndexAtShipB: record.aaveIndexAtShipB,
   });
 
   if (plan.alreadyDocked) {
