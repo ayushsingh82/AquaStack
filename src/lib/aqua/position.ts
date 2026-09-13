@@ -13,7 +13,7 @@
  * accrues on the aToken in the wallet and is invisible to the Aqua curve.
  */
 import {
-  decodeFunctionResult, parseAbiItem, type Address, type Hex, type PublicClient,
+  decodeFunctionResult, parseAbiItem, type AbiEvent, type Address, type Hex, type PublicClient,
 } from 'viem';
 import { Address as SdkAddress } from '@1inch/sdk-core';
 import { SwapVMContract, TakerTraits, type Order } from '@1inch/swap-vm-sdk';
@@ -116,6 +116,29 @@ export async function isPositionActive(client: PublicClient, maker: Address, has
   return statusFromTokensCount((await rawBalance(client, maker, hash, aToken)).tokensCount) === 'active';
 }
 
+// Most hosted RPCs (Alchemy, Infura, QuickNode free tiers, etc.) cap eth_getLogs
+// to a 10,000-block range per call. Split wide ranges into chunks and merge.
+const MAX_LOG_RANGE = 9_999n;
+
+async function getLogsChunked<TAbiEvent extends AbiEvent>(
+  client: PublicClient,
+  params: { address: Address; event: TAbiEvent; fromBlock: bigint; toBlock: bigint },
+) {
+  const { address, event, fromBlock, toBlock } = params;
+  if (toBlock - fromBlock <= MAX_LOG_RANGE) {
+    return client.getLogs({ address, event, fromBlock, toBlock });
+  }
+  const ranges: { fromBlock: bigint; toBlock: bigint }[] = [];
+  for (let start = fromBlock; start <= toBlock; start += MAX_LOG_RANGE + 1n) {
+    const end = start + MAX_LOG_RANGE < toBlock ? start + MAX_LOG_RANGE : toBlock;
+    ranges.push({ fromBlock: start, toBlock: end });
+  }
+  const chunks = await Promise.all(
+    ranges.map((r) => client.getLogs({ address, event, fromBlock: r.fromBlock, toBlock: r.toBlock })),
+  );
+  return chunks.flat();
+}
+
 async function quoteRate(client: PublicClient, order: Order, tokenIn: Address, tokenOut: Address, amount: bigint): Promise<number> {
   const data = SwapVMContract.encodeQuoteCallData({
     order, tokenIn: new SdkAddress(tokenIn), tokenOut: new SdkAddress(tokenOut), amount, takerTraits: TakerTraits.default(),
@@ -130,13 +153,14 @@ export async function readPosition(client: PublicClient, input: ReadPositionInpu
   const fromBlock = input.eventsFromBlock ?? 0n;
   const probeAmount = input.probeAmount ?? 10n ** BigInt(Math.min(legA.decimals, legB.decimals));
 
-  const [rawA, rawB, walletA, walletB, idxNowA, idxNowB] = await Promise.all([
+  const [rawA, rawB, walletA, walletB, idxNowA, idxNowB, toBlock] = await Promise.all([
     rawBalance(client, maker, hash, legA.aToken),
     rawBalance(client, maker, hash, legB.aToken),
     client.readContract({ address: legA.aToken, abi: ERC20_ABI, functionName: 'balanceOf', args: [maker] }) as Promise<bigint>,
     client.readContract({ address: legB.aToken, abi: ERC20_ABI, functionName: 'balanceOf', args: [maker] }) as Promise<bigint>,
     client.readContract({ address: AAVE_POOL, abi: AAVE_POOL_ABI, functionName: 'getReserveNormalizedIncome', args: [legA.token] }) as Promise<bigint>,
     client.readContract({ address: AAVE_POOL, abi: AAVE_POOL_ABI, functionName: 'getReserveNormalizedIncome', args: [legB.token] }) as Promise<bigint>,
+    client.getBlockNumber(),
   ]);
 
   const status = statusFromTokensCount(rawA.tokensCount);
@@ -176,10 +200,10 @@ export async function readPosition(client: PublicClient, input: ReadPositionInpu
     l.args.maker?.toLowerCase() === maker.toLowerCase() && l.args.strategyHash?.toLowerCase() === hash.toLowerCase();
 
   const [pulled, pushed, shipped, docked] = await Promise.all([
-    client.getLogs({ address: AQUA, event: PULLED_EVT, fromBlock }),
-    client.getLogs({ address: AQUA, event: PUSHED_EVT, fromBlock }),
-    client.getLogs({ address: AQUA, event: SHIPPED_EVT, fromBlock }),
-    client.getLogs({ address: AQUA, event: DOCKED_EVT, fromBlock }),
+    getLogsChunked(client, { address: AQUA, event: PULLED_EVT, fromBlock, toBlock }),
+    getLogsChunked(client, { address: AQUA, event: PUSHED_EVT, fromBlock, toBlock }),
+    getLogsChunked(client, { address: AQUA, event: SHIPPED_EVT, fromBlock, toBlock }),
+    getLogsChunked(client, { address: AQUA, event: DOCKED_EVT, fromBlock, toBlock }),
   ]);
   const pulledMine = pulled.filter(mine);
   const pushedMine = pushed.filter(mine);
